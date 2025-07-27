@@ -1,0 +1,17 @@
+{
+  "name": "lfl",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bun": "^1.2.19"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "gsap": "^3.13.0",
+    "three": "^0.178.0"
+  }
+}
