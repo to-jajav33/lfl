@@ -1,6 +1,7 @@
 import Main from "./main/Main";
 import * as THREE from "three";
 import { Card } from "./main/components/Card";
+import { GridPositioning } from "./main/components/GridPositioning";
 
 export const main = new Main(
   document.getElementById("canvas-container") as HTMLElement,
@@ -13,6 +14,15 @@ const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x555555 });
 const planeMesh = new THREE.Mesh(plane, planeMaterial);
 main.scene.add(planeMesh);
 
-const card = new Card();
-card.position.z = card.boundingBox.z * 0.5;
-main.scene.add(card);
+const cards = [];
+for (let i = 0; i < 10; i++) {
+  const card = new Card();
+  card.position.z = Number((card.boundingBox.z * 0.5).toFixed(5));
+  cards.push(card);
+  main.scene.add(card);
+}
+
+const grid = new GridPositioning(cards);
+grid.position.z = cards[0]?.position.z ?? 0;
+grid.fanOut("x", 0.1);
+main.scene.add(grid);
