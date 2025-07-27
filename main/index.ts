@@ -7,9 +7,9 @@ class Main {
   private renderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
-  private controls: OrbitControls;
+  private controls?: OrbitControls;
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, { addHelpers = true }) {
     this.loop = this.loop.bind(this);
 
     this.root = this;
@@ -36,25 +36,29 @@ class Main {
     this.scene = new THREE.Scene();
 
     this.scene.add(this.camera);
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.25;
 
-    // Grid
-    const gridSize = 10;
-    const gridColor = 0x000000;
-    const gridHelper = new THREE.GridHelper(
-      gridSize,
-      gridSize,
-      gridColor,
-      gridColor
-    );
-    this.scene.add(gridHelper);
+    if (addHelpers) {
+      // Controls
+      this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+      this.controls.enableDamping = true;
+      this.controls.dampingFactor = 0.25;
 
-    // Axes
-    const axesSize = 4;
-    const axesHelper = new THREE.AxesHelper(axesSize);
-    this.scene.add(axesHelper);
+      // Grid
+      const gridSize = 10;
+      const gridColor = 0x000000;
+      const gridHelper = new THREE.GridHelper(
+        gridSize,
+        gridSize,
+        gridColor,
+        gridColor
+      );
+      this.scene.add(gridHelper);
+
+      // Axes
+      const axesSize = 4;
+      const axesHelper = new THREE.AxesHelper(axesSize);
+      this.scene.add(axesHelper);
+    }
 
     this.container.appendChild(this.renderer.domElement);
 
@@ -62,12 +66,13 @@ class Main {
   }
 
   loop() {
-    this.controls.update();
+    this.controls?.update();
     this.renderer.render(this.scene, this.camera);
     requestAnimationFrame(this.loop);
   }
 }
 
 export const main = new Main(
-  document.getElementById("canvas-container") as HTMLElement
+  document.getElementById("canvas-container") as HTMLElement,
+  { addHelpers: true }
 );
