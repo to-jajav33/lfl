@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-class Main {
+export default class Main {
   private root: Main;
   private container: HTMLElement;
   private renderer: THREE.WebGLRenderer;
@@ -71,8 +71,3 @@ class Main {
     requestAnimationFrame(this.loop);
   }
 }
-
-export const main = new Main(
-  document.getElementById("canvas-container") as HTMLElement,
-  { addHelpers: true }
-);

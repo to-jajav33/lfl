@@ -1,4 +1,4 @@
-import index from "./main/index.html";
+import index from "./index.html";
 const PORT = 3000;
 // serve /main/index.html
 Bun.serve({
