@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/three": "^0.178.1",
     "bun": "^1.2.19"
   },
   "peerDependencies": {
