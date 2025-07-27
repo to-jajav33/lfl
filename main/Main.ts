@@ -5,9 +5,10 @@ export default class Main {
   private root: Main;
   private container: HTMLElement;
   private renderer: THREE.WebGLRenderer;
-  private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
   private controls?: OrbitControls;
+
+  public scene: THREE.Scene;
 
   constructor(container: HTMLElement, { addHelpers = true }) {
     this.loop = this.loop.bind(this);
