@@ -46,7 +46,7 @@ export default class Main {
 
       // Grid
       const gridSize = 10;
-      const gridColor = 0x000000;
+      const gridColor = 0x550000;
       const gridHelper = new THREE.GridHelper(
         gridSize,
         gridSize,
@@ -54,6 +54,18 @@ export default class Main {
         gridColor
       );
       this.scene.add(gridHelper);
+
+      // Grid vertical
+      const gridSizeVertical = 10;
+      const gridColorVertical = 0x005500;
+      const gridHelperVertical = new THREE.GridHelper(
+        gridSizeVertical,
+        gridSizeVertical,
+        gridColorVertical,
+        gridColorVertical
+      );
+      gridHelperVertical.rotateX(-Math.PI * 0.5);
+      this.scene.add(gridHelperVertical);
 
       // Axes
       const axesSize = 4;

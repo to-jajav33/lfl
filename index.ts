@@ -11,10 +11,8 @@ export const main = new Main(
 const plane = new THREE.PlaneGeometry(10, 10);
 const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x555555 });
 const planeMesh = new THREE.Mesh(plane, planeMaterial);
-planeMesh.rotateX(-Math.PI / 2);
 main.scene.add(planeMesh);
 
 const card = new Card();
-card.rotateX(-Math.PI * 0.5);
-card.position.y = card.boundingBox.y * 0.5;
+card.position.z = card.boundingBox.z * 0.5;
 main.scene.add(card);
