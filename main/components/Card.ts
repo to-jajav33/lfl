@@ -1,6 +1,7 @@
 import * as THREE from "three";
+import { CustomObject3D } from "./CustomObject3D";
 
-export class Card extends THREE.Object3D {
+export class Card extends CustomObject3D {
   constructor() {
     super();
 
@@ -14,13 +15,5 @@ export class Card extends THREE.Object3D {
     const cardMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc });
     const cardMesh = new THREE.Mesh(cardGeometry, cardMaterial);
     this.add(cardMesh);
-  }
-
-  get boundingBox() {
-    const boundingBox = new THREE.Box3().setFromObject(this);
-    const size = new THREE.Vector3();
-    boundingBox.getSize(size);
-
-    return size;
   }
 }
