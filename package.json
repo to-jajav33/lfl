@@ -3,6 +3,10 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "bun run --hot server.ts",
+    "build": "bun build server.ts --outfile server.js"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "bun": "^1.2.19"
