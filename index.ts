@@ -1,3 +1,9 @@
+if (import.meta.hot) {
+  import.meta.hot.accept((newModule) => {
+    // Handle the update, e.g., update local state with newModule.someValue
+    console.log("my-module updated!", newModule.someValue);
+  });
+}
 import Main from "./main/Main";
 import * as THREE from "three";
 import { Card } from "./main/components/Card";
