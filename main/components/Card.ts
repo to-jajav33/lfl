@@ -34,5 +34,9 @@ export class Card extends CustomObject3D {
       this.root.camera,
       this
     );
+
+    this.addEventListener("removed", () => {
+      this.inputManager.destroy();
+    });
   }
 }

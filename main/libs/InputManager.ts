@@ -60,6 +60,10 @@ export class InputManager {
   private lastMouseScreenPosition: Vector2;
   private hitTestObjects: { camera?: Camera; object?: Object3D };
   private lastHitTestSuccess: boolean = false;
+  private listenersCreated: Record<
+    string,
+    { listener: (event: Event) => void; inputName: string }
+  > = {};
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -79,12 +83,20 @@ export class InputManager {
     this.init();
   }
 
+  destroy() {
+    this.eventEmitter.destroy();
+    // remove all canvas event listeners
+    for (const listener of Object.values(this.listenersCreated)) {
+      this.canvas.removeEventListener(listener.inputName, listener.listener);
+    }
+  }
+
   private init() {
     for (const [actionName, inputs] of Object.entries(this.actionDefs)) {
       for (const [_inputName, inputFn] of Object.entries(inputs)) {
         const inputName = _inputName as keyof Inputs;
         console.log("initialized: ", actionName, ": ", inputName);
-        this.canvas.addEventListener(inputName, (event) => {
+        const listener = (event: Event) => {
           if (!this.actions[actionName]) {
             this.actions[actionName] = {
               mouseScreenPosition: new Vector2(),
@@ -139,7 +151,14 @@ export class InputManager {
           inputFn(event as any, this.actions[actionName] as Action);
           // then emit the action
           this.eventEmitter.emit(actionName, this.actions[actionName]);
-        });
+        };
+        if (!this.listenersCreated[inputName]) {
+          this.canvas.addEventListener(inputName, listener);
+          this.listenersCreated[inputName] = {
+            listener,
+            inputName,
+          };
+        }
       }
     }
   }
