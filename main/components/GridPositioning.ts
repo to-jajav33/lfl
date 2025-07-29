@@ -1,11 +1,12 @@
 import * as THREE from "three";
 import { CustomObject3D } from "./CustomObject3D";
+import { Main } from "../Main";
 
 export class GridPositioning extends CustomObject3D {
   private objects: CustomObject3D[];
 
-  constructor(objects: CustomObject3D[]) {
-    super();
+  constructor(root: Main, objects: CustomObject3D[]) {
+    super(root);
 
     this.objects = objects;
   }

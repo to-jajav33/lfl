@@ -1,8 +1,13 @@
 import * as THREE from "three";
+import { Main } from "../Main";
 
 export class CustomObject3D extends THREE.Object3D {
-  constructor() {
+  root: Main;
+
+  constructor(root: Main) {
     super();
+
+    this.root = root;
   }
 
   get boundingBox() {

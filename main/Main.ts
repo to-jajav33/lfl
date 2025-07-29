@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-export default class Main {
+export class Main {
   private root: Main;
   private container: HTMLElement;
-  private renderer: THREE.WebGLRenderer;
-  private camera: THREE.PerspectiveCamera;
+  private _renderer: THREE.WebGLRenderer;
+  private _camera: THREE.PerspectiveCamera;
   private controls?: OrbitControls;
 
   public scene: THREE.Scene;
@@ -20,27 +20,30 @@ export default class Main {
     const width = parseInt(computedStyles.width);
     const height = parseInt(computedStyles.height);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.setClearColor(0xfefefe, 1);
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.shadowMap.autoUpdate = true;
-    this.renderer.shadowMap.needsUpdate = true;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this._renderer = new THREE.WebGLRenderer({ antialias: true });
+    this._renderer.setSize(width, height);
+    this._renderer.setPixelRatio(window.devicePixelRatio);
+    this._renderer.setClearColor(0xfefefe, 1);
+    this._renderer.shadowMap.enabled = true;
+    this._renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this._renderer.shadowMap.autoUpdate = true;
+    this._renderer.shadowMap.needsUpdate = true;
+    this._renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
-    this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    this.camera.position.set(0, 10, 10);
-    this.camera.lookAt(0, 0, 0);
+    this._camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    this._camera.position.set(0, 10, 10);
+    this._camera.lookAt(0, 0, 0);
 
     this.scene = new THREE.Scene();
 
-    this.scene.add(this.camera);
+    this.scene.add(this._camera);
 
     if (addHelpers) {
       // Controls
-      this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+      this.controls = new OrbitControls(
+        this._camera,
+        this._renderer.domElement
+      );
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.25;
 
@@ -73,14 +76,24 @@ export default class Main {
       this.scene.add(axesHelper);
     }
 
-    this.container.appendChild(this.renderer.domElement);
+    this.container.appendChild(this._renderer.domElement);
 
     this.loop();
   }
 
+  get camera() {
+    return this._camera;
+  }
+
+  get renderer() {
+    return this._renderer;
+  }
+
   loop() {
     this.controls?.update();
-    this.renderer.render(this.scene, this.camera);
+    this._renderer.render(this.scene, this._camera);
     requestAnimationFrame(this.loop);
   }
 }
+
+export default Main;
