@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import gsap from "gsap";
+import { pinkyPromiseGenerator } from "./libs/pinkyPromiseGenerator";
 
 export class Main {
   private root: Main;
@@ -9,12 +11,15 @@ export class Main {
   private controls?: OrbitControls;
 
   public scene: THREE.Scene;
-
-  constructor(container: HTMLElement, { addHelpers = true }) {
+  mainTimeline: gsap.core.Timeline;
+  startOfFrame: number = performance.now();
+  fps: number = 60;
+  constructor(container: HTMLElement, { addHelpers = true, fps = 60 }: { addHelpers?: boolean, fps?: number }) {
     this.loop = this.loop.bind(this);
 
     this.root = this;
     this.container = container;
+    this.fps = fps;
 
     const computedStyles = getComputedStyle(this.container);
     const width = parseInt(computedStyles.width);
@@ -78,6 +83,7 @@ export class Main {
 
     this.container.appendChild(this._renderer.domElement);
 
+    this.mainTimeline = gsap.timeline();
     this.loop();
   }
 
@@ -89,9 +95,31 @@ export class Main {
     return this._renderer;
   }
 
+  tweenTo(target: gsap.TweenTarget, duration: number, vars: gsap.TweenVars, ease: gsap.EaseFunction, label: string = ""): gsap.core.Timeline & { whenComplete: Promise<void> } {
+    const prom = pinkyPromiseGenerator();
+
+    const tween = this.mainTimeline.to(target, {
+      ...vars,
+      duration,
+      ease,
+      onComplete: prom.forceResolve(vars.onComplete) as any
+    }, label);
+
+    tween.whenComplete = prom;
+
+    return tween as unknown as gsap.core.Timeline & { whenComplete: Promise<void> };
+  }
+
   loop() {
-    this.controls?.update();
-    this._renderer.render(this.scene, this._camera);
+    const now = performance.now();
+    const delta = now - this.startOfFrame;
+
+    if (delta >= (1000 / this.fps)) {
+      this.controls?.update();
+      this._renderer.render(this.scene, this._camera);
+      this.startOfFrame = now;
+    }
+
     requestAnimationFrame(this.loop);
   }
 }

@@ -2,12 +2,18 @@ import * as THREE from "three";
 import { CustomObject3D } from "./CustomObject3D";
 import { Main } from "../Main";
 import { InputManager } from "../libs/InputManager";
+import * as gsap from "gsap";
 
 export class Card extends CustomObject3D {
   inputManager: InputManager;
+  isFaceUp: boolean;
+  lastFlipTween: InstanceType<typeof gsap.default.core.Timeline> & { whenComplete: Promise<void> } | null;
 
   constructor(root: Main) {
     super(root);
+
+    this.isFaceUp = false;
+    this.lastFlipTween = null;
 
     const cardRatio = 3 / 2.5;
     const cardThickness = 0.01;
@@ -25,9 +31,7 @@ export class Card extends CustomObject3D {
       {
         selected: {
           click: (event, action) => {
-            if (action.isHitTestSuccess) {
-              console.log("selected");
-            }
+            this.flip(action)
           },
         },
       },
@@ -38,5 +42,24 @@ export class Card extends CustomObject3D {
     this.addEventListener("removed", () => {
       this.inputManager.destroy();
     });
+  }
+
+  flip(action: { isHitTestSuccess: boolean }) {
+    if (action.isHitTestSuccess) {
+      console.log("selected");
+      const duration = 0.125;
+      this.lastFlipTween?.kill();
+
+      if (!this.isFaceUp) {
+        this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
+          y: Math.PI,
+        }, gsap.Linear.easeNone, ">");
+      } else {
+        this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
+          y: 0
+        }, gsap.Linear.easeNone, ">");
+      }
+      this.isFaceUp = !this.isFaceUp;
+    }
   }
 }
