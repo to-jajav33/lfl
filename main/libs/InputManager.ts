@@ -161,7 +161,7 @@ export class InputManager {
 
       // then emit the action
       if (wasHitTestSuccess !== this.lastHitTestSuccess) {
-        const hoverInputName = this.lastHitTestSuccess ? ":hoverOut" : ":hoverIn";
+        const hoverInputName = this.lastHitTestSuccess ? ":hoverIn" : ":hoverOut";
         const actionsToEmit = this.indexedByInputEvent[hoverInputName];
         for (const [actionName, { configFn }] of Object.entries(actionsToEmit ?? {})) {
           const shouldEmit = configFn ? configFn(event as any, this.actions[actionName] as Action) : true;
