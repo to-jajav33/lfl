@@ -12,6 +12,8 @@ export class Card extends CustomObject3D {
   constructor(root: Main) {
     super(root);
 
+    this.flip = this.flip.bind(this);
+
     this.isFaceUp = false;
     this.lastFlipTween = null;
 
@@ -30,14 +32,13 @@ export class Card extends CustomObject3D {
       this.root.renderer.domElement,
       {
         selected: {
-          click: (event, action) => {
-            this.flip(action)
-          },
+          click: () => void 0,
         },
       },
       this.root.camera,
       this
     );
+    this.inputManager.eventEmitter.on("selected", this.flip);
 
     this.addEventListener("removed", () => {
       this.inputManager.destroy();

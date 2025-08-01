@@ -55,7 +55,7 @@ export class InputManager {
   private canvas: HTMLCanvasElement;
   private actionDefs: ActionDefs;
   private actions: Record<string, Action> = {};
-  private eventEmitter: EventEmitter;
+  public eventEmitter: EventEmitter;
   private lastMouseScreenPosition: Vector2;
   private hitTestObjects: { camera?: Camera; object?: Object3D };
   private lastHitTestSuccess: boolean = false;
@@ -172,7 +172,9 @@ export class InputManager {
       this.actions[actionName].isHitTestSuccess = this.lastHitTestSuccess;
 
       // now let the user update any input data
-      inputFn(event as any, this.actions[actionName] as Action);
+      if (inputFn) {
+        inputFn(event as any, this.actions[actionName] as Action);
+      }
       // then emit the action
       this.eventEmitter.emit(actionName, this.actions[actionName]);
     }
