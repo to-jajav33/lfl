@@ -41,6 +41,8 @@ interface Inputs {
   ":dragleave"?: (event: DragEvent, action: Action) => any;
   ":dragover"?: (event: DragEvent, action: Action) => any;
   ":dragexit"?: (event: DragEvent, action: Action) => any;
+  ":hoverIn"?: (event: PointerEvent, action: Action) => any;
+  ":hoverOut"?: (event: PointerEvent, action: Action) => any;
   pointerdown?: (event: PointerEvent, action: Action) => any;
   pointerup?: (event: PointerEvent, action: Action) => any;
   pointermove?: (event: PointerEvent, action: Action) => any;
@@ -105,11 +107,17 @@ export class InputManager {
         };
         console.log("indexed: ", _inputName, ": ", actionName);
 
-        if (!this.listenersCreated[_inputName] && !_inputName.startsWith(":")) {
-          this.canvas.addEventListener(_inputName, this.handleInput);
-          this.listenersCreated[_inputName] = {
+        let convertedInputName = _inputName;
+        if (_inputName.startsWith(":")) {
+          convertedInputName = "pointermove";
+          console.log("converted: ", convertedInputName, "from: ", _inputName);
+        }
+
+        if (!this.listenersCreated[convertedInputName]) {
+          this.canvas.addEventListener(convertedInputName, this.handleInput);
+          this.listenersCreated[convertedInputName] = {
             listener: this.handleInput,
-            inputName: _inputName,
+            inputName: convertedInputName,
           };
         }
       }
@@ -117,10 +125,6 @@ export class InputManager {
   }
 
   handleInput(event: Event) {
-    const inputName = event.type as keyof Inputs;
-    const actions = this.indexedByInputEvent[inputName];
-    if (!actions) return;
-
     // @todo debounce the mouse events to optimize performance
     if (
       event instanceof MouseEvent ||
@@ -141,6 +145,8 @@ export class InputManager {
         (-(clientY ?? 0 - rect.top) / this.canvas.offsetHeight) * 2 + 1
       );
 
+      const wasHitTestSuccess = this.lastHitTestSuccess;
+
       if (this.hitTestObjects.camera && this.hitTestObjects.object) {
         const raycaster = new Raycaster();
         raycaster.setFromCamera(
@@ -152,7 +158,29 @@ export class InputManager {
         );
         this.lastHitTestSuccess = intersects.length > 0;
       }
+
+      // then emit the action
+      if (wasHitTestSuccess !== this.lastHitTestSuccess) {
+        const hoverInputName = this.lastHitTestSuccess ? ":hoverOut" : ":hoverIn";
+        const actionsToEmit = this.indexedByInputEvent[hoverInputName];
+        for (const [actionName, { inputFn }] of Object.entries(actionsToEmit ?? {})) {
+          if (inputFn) {
+            inputFn(event as any, this.actions[actionName] as Action);
+          }
+          console.log("emitting: ", actionName);
+          this.eventEmitter.emit(actionName, this.actions[actionName]);
+        }
+      }
     }
+
+    const inputName = event.type as keyof Inputs;
+    let actions = this.indexedByInputEvent[inputName];
+    if (inputName.endsWith("move")) {
+      actions = {
+        ...actions
+      }
+    }
+    if (!actions) return;
 
     for (const [actionName, { inputFn }] of Object.entries(actions ?? {})) {
       if (!this.actions[actionName]) {
@@ -161,7 +189,7 @@ export class InputManager {
           pressedStrength: 0,
           isJustPressed: false,
           isJustReleased: false,
-          isHitTestSuccess: false,
+          isHitTestSuccess: false
         };
       }
 
@@ -175,7 +203,8 @@ export class InputManager {
       if (inputFn) {
         inputFn(event as any, this.actions[actionName] as Action);
       }
-      // then emit the action
+
+      console.log("emitting: ", actionName);
       this.eventEmitter.emit(actionName, this.actions[actionName]);
     }
 

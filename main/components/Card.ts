@@ -13,6 +13,8 @@ export class Card extends CustomObject3D {
     super(root);
 
     this.flip = this.flip.bind(this);
+    this.hoveredIn = this.hoveredIn.bind(this);
+    this.hoveredOut = this.hoveredOut.bind(this);
 
     this.isFaceUp = false;
     this.lastFlipTween = null;
@@ -34,11 +36,19 @@ export class Card extends CustomObject3D {
         selected: {
           click: () => void 0,
         },
+        hoveredIn: {
+          ":hoverOut": () => void 0,
+        },
+        hoveredOut: {
+          ":hoverIn": () => void 0,
+        },
       },
       this.root.camera,
       this
     );
     this.inputManager.eventEmitter.on("selected", this.flip);
+    this.inputManager.eventEmitter.on(":hoverIn", this.hoveredIn);
+    this.inputManager.eventEmitter.on(":hoverOut", this.hoveredOut);
 
     this.addEventListener("removed", () => {
       this.inputManager.destroy();
@@ -62,5 +72,13 @@ export class Card extends CustomObject3D {
       }
       this.isFaceUp = !this.isFaceUp;
     }
+  }
+
+  hoveredIn(action: { isHitTestSuccess: boolean }) {
+    console.log("hovered in");
+  }
+
+  hoveredOut(action: { isHitTestSuccess: boolean }) {
+    console.log("hovered out");
   }
 }
