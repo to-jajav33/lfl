@@ -65,7 +65,7 @@ export class InputManager {
     string,
     { listener: (event: Event) => void; inputName: string }
   > = {};
-  private indexedByInputEvent: Record<string, Record<string, { inputFn: (event: Event, action: Action) => any; actionName: string }>> = {};
+  private indexedByInputEvent: Record<string, Record<string, { configFn: (event: Event, action: Action) => any; actionName: string }>> = {};
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -99,10 +99,10 @@ export class InputManager {
   private init() {
     // optimize by indexing the input names
     for (const [actionName, inputs] of Object.entries(this.actionDefs)) {
-      for (const [_inputName, inputFn] of Object.entries(inputs)) {
+      for (const [_inputName, configFn] of Object.entries(inputs)) {
         this.indexedByInputEvent[_inputName] ??= {};
         this.indexedByInputEvent[_inputName][actionName] = {
-          inputFn,
+          configFn,
           actionName,
         };
         console.log("indexed: ", _inputName, ": ", actionName);
@@ -163,12 +163,12 @@ export class InputManager {
       if (wasHitTestSuccess !== this.lastHitTestSuccess) {
         const hoverInputName = this.lastHitTestSuccess ? ":hoverOut" : ":hoverIn";
         const actionsToEmit = this.indexedByInputEvent[hoverInputName];
-        for (const [actionName, { inputFn }] of Object.entries(actionsToEmit ?? {})) {
-          if (inputFn) {
-            inputFn(event as any, this.actions[actionName] as Action);
+        for (const [actionName, { configFn }] of Object.entries(actionsToEmit ?? {})) {
+          const shouldEmit = configFn ? configFn(event as any, this.actions[actionName] as Action) : true;
+          if (shouldEmit) {
+            console.log("emitting: ", actionName);
+            this.eventEmitter.emit(actionName, this.actions[actionName]);
           }
-          console.log("emitting: ", actionName);
-          this.eventEmitter.emit(actionName, this.actions[actionName]);
         }
       }
     }
@@ -182,7 +182,7 @@ export class InputManager {
     }
     if (!actions) return;
 
-    for (const [actionName, { inputFn }] of Object.entries(actions ?? {})) {
+    for (const [actionName, { configFn }] of Object.entries(actions ?? {})) {
       if (!this.actions[actionName]) {
         this.actions[actionName] = {
           mouseScreenPosition: new Vector2(),
@@ -200,12 +200,15 @@ export class InputManager {
       this.actions[actionName].isHitTestSuccess = this.lastHitTestSuccess;
 
       // now let the user update any input data
-      if (inputFn) {
-        inputFn(event as any, this.actions[actionName] as Action);
+      let shouldEmit = true;
+      if (configFn) {
+        shouldEmit = configFn(event as any, this.actions[actionName] as Action);
       }
 
-      console.log("emitting: ", actionName);
-      this.eventEmitter.emit(actionName, this.actions[actionName]);
+      if (shouldEmit) {
+        console.log("emitting: ", actionName);
+        this.eventEmitter.emit(actionName, this.actions[actionName]);
+      }
     }
 
   };

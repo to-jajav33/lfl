@@ -34,13 +34,13 @@ export class Card extends CustomObject3D {
       this.root.renderer.domElement,
       {
         selected: {
-          click: () => void 0,
+          click: (_ev, action) => (action.isHitTestSuccess),
         },
         hoveredIn: {
-          ":hoverOut": () => void 0,
+          ":hoverOut": () => true,
         },
         hoveredOut: {
-          ":hoverIn": () => void 0,
+          ":hoverIn": () => true,
         },
       },
       this.root.camera,
