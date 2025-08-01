@@ -35,13 +35,12 @@ interface Inputs {
   focus?: (event: Event, action: Action) => any;
   blur?: (event: Event, action: Action) => any;
   contextmenu?: (event: Event, action: Action) => any;
-  drop?: (event: Event, action: Action) => any;
-  drag?: (event: DragEvent, action: Action) => any;
-  dragend?: (event: DragEvent, action: Action) => any;
-  dragenter?: (event: DragEvent, action: Action) => any;
-  dragleave?: (event: DragEvent, action: Action) => any;
-  dragover?: (event: DragEvent, action: Action) => any;
-  dragexit?: (event: DragEvent, action: Action) => any;
+  ":drag"?: (event: DragEvent, action: Action) => any;
+  ":dragend"?: (event: DragEvent, action: Action) => any;
+  ":dragenter"?: (event: DragEvent, action: Action) => any;
+  ":dragleave"?: (event: DragEvent, action: Action) => any;
+  ":dragover"?: (event: DragEvent, action: Action) => any;
+  ":dragexit"?: (event: DragEvent, action: Action) => any;
   pointerdown?: (event: PointerEvent, action: Action) => any;
   pointerup?: (event: PointerEvent, action: Action) => any;
   pointermove?: (event: PointerEvent, action: Action) => any;
@@ -64,6 +63,7 @@ export class InputManager {
     string,
     { listener: (event: Event) => void; inputName: string }
   > = {};
+  private indexedByInputEvent: Record<string, Record<string, { inputFn: (event: Event, action: Action) => any; actionName: string }>> = {};
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -71,6 +71,9 @@ export class InputManager {
     camera?: Camera,
     object?: Object3D
   ) {
+    this.handleInput = this.handleInput.bind(this);
+
+    this.indexedByInputEvent = {};
     this.canvas = canvas;
     this.hitTestObjects = {
       camera,
@@ -92,74 +95,87 @@ export class InputManager {
   }
 
   private init() {
+    // optimize by indexing the input names
     for (const [actionName, inputs] of Object.entries(this.actionDefs)) {
       for (const [_inputName, inputFn] of Object.entries(inputs)) {
-        const inputName = _inputName as keyof Inputs;
-        console.log("initialized: ", actionName, ": ", inputName);
-        const listener = (event: Event) => {
-          if (!this.actions[actionName]) {
-            this.actions[actionName] = {
-              mouseScreenPosition: new Vector2(),
-              pressedStrength: 0,
-              isJustPressed: false,
-              isJustReleased: false,
-              isHitTestSuccess: false,
-            };
-            return;
-          }
-
-          // @todo debounce the mouse events to optimize performance
-          if (
-            event instanceof MouseEvent ||
-            event instanceof PointerEvent ||
-            event instanceof TouchEvent
-          ) {
-            const rect = this.canvas.getBoundingClientRect();
-            const clientX =
-              event instanceof MouseEvent || event instanceof PointerEvent
-                ? event.clientX
-                : event.touches[0]?.clientX;
-            const clientY =
-              event instanceof MouseEvent || event instanceof PointerEvent
-                ? event.clientY
-                : event.touches[0]?.clientY;
-            this.lastMouseScreenPosition = new Vector2(
-              ((clientX ?? 0 - rect.left) / this.canvas.offsetWidth) * 2 - 1,
-              (-(clientY ?? 0 - rect.top) / this.canvas.offsetHeight) * 2 + 1
-            );
-
-            if (this.hitTestObjects.camera && this.hitTestObjects.object) {
-              const raycaster = new Raycaster();
-              raycaster.setFromCamera(
-                this.lastMouseScreenPosition,
-                this.hitTestObjects.camera
-              );
-              const intersects = raycaster.intersectObject(
-                this.hitTestObjects.object
-              );
-              this.lastHitTestSuccess = intersects.length > 0;
-            }
-          }
-
-          // update the mouse screen position, event for non mouse events
-          // this way user can say when key pressed, AND mouse is over the object, etc.
-          this.actions[actionName].mouseScreenPosition =
-            this.lastMouseScreenPosition;
-          this.actions[actionName].isHitTestSuccess = this.lastHitTestSuccess;
-
-          // now let the user update any input data
-          inputFn(event as any, this.actions[actionName] as Action);
-          // then emit the action
-          this.eventEmitter.emit(actionName, this.actions[actionName]);
+        this.indexedByInputEvent[_inputName] ??= {};
+        this.indexedByInputEvent[_inputName][actionName] = {
+          inputFn,
+          actionName,
         };
-        if (!this.listenersCreated[inputName]) {
-          this.canvas.addEventListener(inputName, listener);
-          this.listenersCreated[inputName] = {
-            listener,
-            inputName,
+        console.log("indexed: ", _inputName, ": ", actionName);
+
+        if (!this.listenersCreated[_inputName] && !_inputName.startsWith(":")) {
+          this.canvas.addEventListener(_inputName, this.handleInput);
+          this.listenersCreated[_inputName] = {
+            listener: this.handleInput,
+            inputName: _inputName,
           };
         }
       }
     }
   }
+
+  handleInput(event: Event) {
+    const inputName = event.type as keyof Inputs;
+    const actions = this.indexedByInputEvent[inputName];
+    if (!actions) return;
+
+    // @todo debounce the mouse events to optimize performance
+    if (
+      event instanceof MouseEvent ||
+      event instanceof PointerEvent ||
+      event instanceof TouchEvent
+    ) {
+      const rect = this.canvas.getBoundingClientRect();
+      const clientX =
+        event instanceof MouseEvent || event instanceof PointerEvent
+          ? event.clientX
+          : event.touches[0]?.clientX;
+      const clientY =
+        event instanceof MouseEvent || event instanceof PointerEvent
+          ? event.clientY
+          : event.touches[0]?.clientY;
+      this.lastMouseScreenPosition = new Vector2(
+        ((clientX ?? 0 - rect.left) / this.canvas.offsetWidth) * 2 - 1,
+        (-(clientY ?? 0 - rect.top) / this.canvas.offsetHeight) * 2 + 1
+      );
+
+      if (this.hitTestObjects.camera && this.hitTestObjects.object) {
+        const raycaster = new Raycaster();
+        raycaster.setFromCamera(
+          this.lastMouseScreenPosition,
+          this.hitTestObjects.camera
+        );
+        const intersects = raycaster.intersectObject(
+          this.hitTestObjects.object
+        );
+        this.lastHitTestSuccess = intersects.length > 0;
+      }
+    }
+
+    for (const [actionName, { inputFn }] of Object.entries(actions ?? {})) {
+      if (!this.actions[actionName]) {
+        this.actions[actionName] = {
+          mouseScreenPosition: new Vector2(),
+          pressedStrength: 0,
+          isJustPressed: false,
+          isJustReleased: false,
+          isHitTestSuccess: false,
+        };
+      }
+
+      // update the mouse screen position, event for non mouse events
+      // this way user can say when key pressed, AND mouse is over the object, etc.
+      this.actions[actionName].mouseScreenPosition =
+        this.lastMouseScreenPosition;
+      this.actions[actionName].isHitTestSuccess = this.lastHitTestSuccess;
+
+      // now let the user update any input data
+      inputFn(event as any, this.actions[actionName] as Action);
+      // then emit the action
+      this.eventEmitter.emit(actionName, this.actions[actionName]);
+    }
+
+  };
 }
