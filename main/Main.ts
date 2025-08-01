@@ -98,6 +98,10 @@ export class Main {
   tweenTo(target: gsap.TweenTarget, duration: number, vars: gsap.TweenVars, ease: gsap.EaseFunction, label: string = ""): gsap.core.Timeline & { whenComplete: Promise<void> } {
     const prom = pinkyPromiseGenerator();
 
+    if (label === ":playhead") {
+      label = this.mainTimeline.totalTime().toFixed(2);
+    }
+
     const tween = this.mainTimeline.to(target, {
       ...vars,
       duration,

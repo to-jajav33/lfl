@@ -5,6 +5,7 @@ import { InputManager } from "../libs/InputManager";
 import * as gsap from "gsap";
 
 export class Card extends CustomObject3D {
+  cardId: number = 0;
   inputManager: InputManager;
   isFaceUp: boolean;
   lastFlipTween: InstanceType<typeof gsap.default.core.Timeline> & { whenComplete: Promise<void> } | null;
@@ -61,42 +62,39 @@ export class Card extends CustomObject3D {
     if (action.isHitTestSuccess) {
       console.log("selected");
       const duration = 0.125;
-      this.lastFlipTween?.kill();
 
       if (!this.isFaceUp) {
         this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
           y: Math.PI,
-        }, gsap.Linear.easeNone, ">");
+        }, gsap.Linear.easeNone, ":playhead");
       } else {
         this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
           y: 0
-        }, gsap.Linear.easeNone, ">");
+        }, gsap.Linear.easeNone, ":playhead");
       }
       this.isFaceUp = !this.isFaceUp;
     }
   }
 
   scaleUp(action: { isHitTestSuccess: boolean }) {
-    console.log("scale up");
+    console.log("scale up [", this.cardId, "]");
     const duration = 0.125;
-    this.lastScaleTween?.kill();
 
     this.lastScaleTween = this.root.tweenTo(this.scale, duration, {
       x: 1.1,
       y: 1.1,
       z: 1.0,
-    }, gsap.Linear.easeNone, ">");
+    }, gsap.Linear.easeNone, ":playhead");
   }
 
   scaleDown(action: { isHitTestSuccess: boolean }) {
-    console.log("scale down");
+    console.log("scale down [", this.cardId, "]");
     const duration = 0.125;
-    this.lastScaleTween?.kill();
 
     this.lastScaleTween = this.root.tweenTo(this.scale, duration, {
       x: 1.0,
       y: 1.0,
       z: 1.0,
-    }, gsap.Linear.easeNone, ">");
+    }, gsap.Linear.easeNone, ":playhead");
   }
 }

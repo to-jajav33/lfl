@@ -23,6 +23,7 @@ main.scene.add(planeMesh);
 const cards = [];
 for (let i = 0; i < 10; i++) {
   const card = new Card(main);
+  card.cardId = i;
   card.position.z = Number((card.boundingBox.z * 0.5).toFixed(5));
   cards.push(card);
   main.scene.add(card);
