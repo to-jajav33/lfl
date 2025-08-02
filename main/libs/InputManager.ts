@@ -266,11 +266,6 @@ export class InputManager {
       const action = this.getAction(actionName);
       if (!action) continue;
 
-      // update the mouse screen position, event for non mouse events
-      // this way user can say when key pressed, AND mouse is over the object, etc.
-      action.mouseInfo =
-        this.mouseInfo;
-
       // now let the user update any input data
       let shouldEmit = true;
       if (configFn) {
