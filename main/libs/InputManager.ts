@@ -182,29 +182,29 @@ export class InputManager {
       this.mouseInfo.isJustPressed = false;
       this.mouseInfo.isJustReleased = false;
 
-      let evMouseBtnType = ""
-      if (this.mouseInfo.isHitTestSuccess) {
-        switch (evType) {
-          case "mousedown":
-          case "pointerdown":
-          case "touchstart":
+      let evMouseBtnType = "";
+      switch (evType) {
+        case "mousedown":
+        case "pointerdown":
+        case "touchstart":
+          if (this.mouseInfo.isHitTestSuccess) {
             if (!wasPressed) {
               this.mouseInfo.isJustPressed = true;
             }
             this.mouseInfo.isPressed = true;
-            break;
-          case "mouseup":
-          case "pointerup":
-          case "touchend":
-            if (wasPressed) {
-              this.mouseInfo.isJustReleased = true;
-            }
-            this.mouseInfo.isPressed = false;
-            if (wasJustPressed) {
-              evMouseBtnType = ":click";
-            }
-            break;
-        }
+          }
+          break;
+        case "mouseup":
+        case "pointerup":
+        case "touchend":
+          if (wasPressed) {
+            this.mouseInfo.isJustReleased = true;
+          }
+          this.mouseInfo.isPressed = false;
+          if (wasJustPressed) {
+            evMouseBtnType = ":click";
+          }
+          break;
       }
 
       // handle hover events
@@ -214,15 +214,16 @@ export class InputManager {
       }
 
       // handle drag events
-      let evDragType = ""
-      this.mouseInfo.isDragging = false;
+      let evDragType = "";
       if (evType.endsWith("move") && this.mouseInfo.isPressed) {
         evDragType = ":dragMove";
         this.mouseInfo.isDragging = true;
         if (!wasDragging) {
           evDragType = ":dragStart";
         }
-      } else if (this.mouseInfo.isJustReleased && wasDragging) {
+      }
+
+      if (!this.mouseInfo.isPressed && wasDragging) {
         evDragType = ":dragEnd";
         this.mouseInfo.isDragging = false;
       }
@@ -244,35 +245,41 @@ export class InputManager {
 
   }
 
+  getAction(actionName: string) {
+    if (!this.actions[actionName]) {
+      this.actions[actionName] = {
+        mouseInfo: this.mouseInfo,
+        pressedStrength: 0,
+        isJustPressed: false,
+        isJustReleased: false
+      };
+    }
+    return this.actions[actionName];
+  }
+
   private handleEmitActions(evType: string, event: Event) {
     const inputName = evType as keyof Inputs;
     let actions = this.indexedByInputEvent[inputName];
     if (!actions) return;
 
     for (const [actionName, { configFn }] of Object.entries(actions ?? {})) {
-      if (!this.actions[actionName]) {
-        this.actions[actionName] = {
-          mouseInfo: this.mouseInfo,
-          pressedStrength: 0,
-          isJustPressed: false,
-          isJustReleased: false,
-        };
-      }
+      const action = this.getAction(actionName);
+      if (!action) continue;
 
       // update the mouse screen position, event for non mouse events
       // this way user can say when key pressed, AND mouse is over the object, etc.
-      this.actions[actionName].mouseInfo =
+      action.mouseInfo =
         this.mouseInfo;
 
       // now let the user update any input data
       let shouldEmit = true;
       if (configFn) {
-        shouldEmit = configFn(event as any, this.actions[actionName] as Action);
+        shouldEmit = configFn(event as any, action as Action);
       }
 
       if (shouldEmit) {
         console.log("emitting: ", actionName);
-        this.eventEmitter.emit(actionName, this.actions[actionName]);
+        this.eventEmitter.emit(actionName, action);
       }
     }
   }

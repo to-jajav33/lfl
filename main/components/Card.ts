@@ -36,9 +36,13 @@ export class Card extends CustomObject3D {
     this.inputManager = new InputManager(
       this.root.renderer.domElement,
       {
-        drag: {
+        dragStart: {
           ":dragStart": (_ev, _action) => true,
+        },
+        dragMove: {
           ":dragMove": (_ev, _action) => true,
+        },
+        dragEnd: {
           ":dragEnd": (_ev, _action) => true,
         },
         selected: {
