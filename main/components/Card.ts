@@ -3,6 +3,9 @@ import { CustomObject3D } from "./CustomObject3D";
 import { Main } from "../Main";
 import { InputManager } from "../libs/InputManager";
 import * as AllGSAP from "gsap";
+import { FontLoader } from "three/addons/loaders/FontLoader.js";
+import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
+import * as FontHelvetikerJSON from "three/examples/fonts/helvetiker_regular.typeface.json";
 
 export class Card extends CustomObject3D {
   cardId: number = 0;
@@ -11,7 +14,7 @@ export class Card extends CustomObject3D {
   lastFlipTween: InstanceType<typeof AllGSAP.default.core.Timeline> & { whenComplete: Promise<void> } | null;
   lastScaleTween: InstanceType<typeof AllGSAP.default.core.Timeline> & { whenComplete: Promise<void> } | null;
 
-  constructor(root: Main) {
+  constructor(root: Main, label: string = "?") {
     super(root);
 
     this.flip = this.flip.bind(this);
@@ -32,6 +35,16 @@ export class Card extends CustomObject3D {
     const cardMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc });
     const cardMesh = new THREE.Mesh(cardGeometry, cardMaterial);
     this.add(cardMesh);
+
+    const font = new FontLoader().parse(FontHelvetikerJSON);
+    const labelGeometry = new TextGeometry(label, {
+      font,
+      size: 0.5,
+      depth: 0.01,
+    });
+    const labelMesh = new THREE.Mesh(labelGeometry, new THREE.MeshBasicMaterial({ color: 0x000000 }));
+    labelMesh.position.set(-this.getOtherBoundingBox(labelMesh).x * 0.5, - this.boundingBox.y * 0.5 + this.getOtherBoundingBox(labelMesh).y * 0.5, 0.0);
+    this.add(labelMesh);
 
     this.inputManager = new InputManager(
       this.root.renderer.domElement,

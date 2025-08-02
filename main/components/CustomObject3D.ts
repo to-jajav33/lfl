@@ -11,7 +11,11 @@ export class CustomObject3D extends THREE.Object3D {
   }
 
   get boundingBox() {
-    const boundingBox = new THREE.Box3().setFromObject(this);
+    return this.getOtherBoundingBox(this);
+  }
+
+  getOtherBoundingBox(other: THREE.Object3D) {
+    const boundingBox = new THREE.Box3().setFromObject(other);
     const size = new THREE.Vector3();
     boundingBox.getSize(size);
 
