@@ -37,12 +37,12 @@ export class Card extends CustomObject3D {
       this.root.renderer.domElement,
       {
         drag: {
-          ":dragStart": (_ev, action) => (action.mouseInfo.isHitTestSuccess),
-          ":dragMove": (_ev, action) => (action.mouseInfo.isHitTestSuccess),
-          ":dragEnd": (_ev, action) => (action.mouseInfo.isHitTestSuccess),
+          ":dragStart": (_ev, _action) => true,
+          ":dragMove": (_ev, _action) => true,
+          ":dragEnd": (_ev, _action) => true,
         },
         selected: {
-          click: (_ev, action) => (action.mouseInfo.isHitTestSuccess),
+          ":click": (_ev, _action) => true,
         },
         scaleUp: {
           ":hoverIn": () => true,
@@ -64,25 +64,21 @@ export class Card extends CustomObject3D {
   }
 
   flip(action: { isHitTestSuccess: boolean }) {
-    if (action.isHitTestSuccess) {
-      console.log("selected");
-      const duration = 0.125;
+    const duration = 0.125;
 
-      if (!this.isFaceUp) {
-        this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
-          y: Math.PI,
-        }, gsap.Linear.easeNone, ":playhead");
-      } else {
-        this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
-          y: 0
-        }, gsap.Linear.easeNone, ":playhead");
-      }
-      this.isFaceUp = !this.isFaceUp;
+    if (!this.isFaceUp) {
+      this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
+        y: Math.PI,
+      }, gsap.Linear.easeNone, ":playhead");
+    } else {
+      this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
+        y: 0
+      }, gsap.Linear.easeNone, ":playhead");
     }
+    this.isFaceUp = !this.isFaceUp;
   }
 
   scaleUp(action: { isHitTestSuccess: boolean }) {
-    console.log("scale up [", this.cardId, "]");
     const duration = 0.125;
 
     this.lastScaleTween = this.root.tweenTo(this.scale, duration, {
@@ -93,7 +89,6 @@ export class Card extends CustomObject3D {
   }
 
   scaleDown(action: { isHitTestSuccess: boolean }) {
-    console.log("scale down [", this.cardId, "]");
     const duration = 0.125;
 
     this.lastScaleTween = this.root.tweenTo(this.scale, duration, {

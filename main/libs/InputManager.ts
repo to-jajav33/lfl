@@ -17,7 +17,6 @@ export type Action = {
 };
 
 interface Inputs {
-  click?: (event: MouseEvent, action: Action) => any;
   mouseDown?: (event: MouseEvent, action: Action) => any;
   mouseUp?: (event: MouseEvent, action: Action) => any;
   mouseMove?: (event: MouseEvent, action: Action) => any;
@@ -42,6 +41,7 @@ interface Inputs {
   focus?: (event: Event, action: Action) => any;
   blur?: (event: Event, action: Action) => any;
   contextmenu?: (event: Event, action: Action) => any;
+  ":click"?: (event: MouseEvent, action: Action) => any;
   ":dragStart"?: (event: DragEvent, action: Action) => any;
   ":dragMove"?: (event: DragEvent, action: Action) => any;
   ":dragEnd"?: (event: DragEvent, action: Action) => any;
@@ -72,7 +72,6 @@ export class InputManager {
     isDragging: false,
   };
   private hitTestObjects: { camera?: Camera; object?: Object3D };
-  private lastEventType: string = "";
   private listenersCreated: Record<
     string,
     { listener: (event: Event) => void; inputName: string }
@@ -123,6 +122,8 @@ export class InputManager {
           convertedInputNames = ["pointermove"];
           if (_inputName.startsWith(":drag")) {
             convertedInputNames = ["pointerdown", "pointermove", "pointerup"];
+          } else if (_inputName === ":click") {
+            convertedInputNames = ["pointerdown", "pointerup"];
           }
           console.log("converted: ", convertedInputNames, "from: ", _inputName);
         }
@@ -141,19 +142,11 @@ export class InputManager {
   }
 
   handleInput(event: Event) {
+    let evType = event.type;
     const wasPressed = this.mouseInfo.isPressed;
     const wasHitTestSuccess = this.mouseInfo.isHitTestSuccess;
+    const wasJustPressed = this.mouseInfo.isJustPressed;
     const wasDragging = this.mouseInfo.isDragging;
-
-    const lastEventType = this.lastEventType;
-    this.lastEventType = event.type;
-
-    this.mouseInfo.isJustReleased = false;
-    if (lastEventType === "click") {
-      this.mouseInfo.isJustPressed = false;
-      this.mouseInfo.isPressed = false;
-      this.mouseInfo.isJustReleased = true;
-    }
 
     // @todo singleto mouse logic for performance
     if (
@@ -186,91 +179,75 @@ export class InputManager {
       }
 
       // update the mouse info
-      if (this.mouseInfo.isJustReleased) {
-        this.mouseInfo.isJustReleased = false;
-      }
+      this.mouseInfo.isJustPressed = false;
+      this.mouseInfo.isJustReleased = false;
 
-      switch (event.type) {
-        case "click":
-          console.log("click");
-          this.mouseInfo.isJustPressed = true;
-          this.mouseInfo.isPressed = true;
-          break;
-        case "mousedown":
-        case "pointerdown":
-        case "touchstart":
-          if (!wasPressed) {
-            this.mouseInfo.isJustPressed = true;
-          }
-          console.log("set isPressed to true");
-          this.mouseInfo.isPressed = true;
-          break;
-        case "mouseup":
-        case "pointerup":
-        case "touchend":
-          if (wasPressed) {
-            this.mouseInfo.isJustReleased = true;
-          }
-          console.log("set isPressed to false");
-          this.mouseInfo.isPressed = false;
-          break;
+      let evMouseBtnType = ""
+      if (this.mouseInfo.isHitTestSuccess) {
+        switch (evType) {
+          case "mousedown":
+          case "pointerdown":
+          case "touchstart":
+            if (!wasPressed) {
+              this.mouseInfo.isJustPressed = true;
+            }
+            this.mouseInfo.isPressed = true;
+            break;
+          case "mouseup":
+          case "pointerup":
+          case "touchend":
+            if (wasPressed) {
+              this.mouseInfo.isJustReleased = true;
+            }
+            this.mouseInfo.isPressed = false;
+            if (wasJustPressed) {
+              evMouseBtnType = ":click";
+            }
+            break;
+        }
       }
-
 
       // handle hover events
+      let evHoverType = ""
       if (wasHitTestSuccess !== this.mouseInfo.isHitTestSuccess) {
-        const hoverInputName = this.mouseInfo.isHitTestSuccess ? ":hoverIn" : ":hoverOut";
-        const hoverActionsToEmit = this.indexedByInputEvent[hoverInputName];
-        for (const [actionName, { configFn }] of Object.entries(hoverActionsToEmit ?? {})) {
-          if (!this.actions[actionName]) {
-            this.actions[actionName] = {
-              mouseInfo: this.mouseInfo,
-              pressedStrength: 0,
-              isJustPressed: this.mouseInfo.isJustPressed,
-              isJustReleased: this.mouseInfo.isJustReleased,
-            };
-          }
-          const shouldEmit = configFn ? configFn(event as any, this.actions[actionName] as Action) : true;
-          if (shouldEmit) {
-            console.log("emitting: ", actionName);
-            this.eventEmitter.emit(actionName, this.actions[actionName]);
-          }
-        }
+        evHoverType = this.mouseInfo.isHitTestSuccess ? ":hoverIn" : ":hoverOut";
       }
 
       // handle drag events
+      let evDragType = ""
       this.mouseInfo.isDragging = false;
-      if (event.type.endsWith("move") && this.mouseInfo.isPressed) {
-        let dragInputName = ":drag";
+      if (evType.endsWith("move") && this.mouseInfo.isPressed) {
+        evDragType = ":dragMove";
         this.mouseInfo.isDragging = true;
-        if (this.mouseInfo.isJustPressed) {
-          dragInputName = ":dragStart";
-        } else if (this.mouseInfo.isJustReleased) {
-          dragInputName = ":dragEnd";
-          this.mouseInfo.isDragging = false;
+        if (!wasDragging) {
+          evDragType = ":dragStart";
         }
-        const dragActionsToEmit = this.indexedByInputEvent[dragInputName];
-        for (const [actionName, { configFn }] of Object.entries(dragActionsToEmit ?? {})) {
-          if (!this.actions[actionName]) {
-            this.actions[actionName] = {
-              mouseInfo: this.mouseInfo,
-              pressedStrength: 0,
-              isJustPressed: this.mouseInfo.isJustPressed,
-              isJustReleased: this.mouseInfo.isJustReleased,
-            };
-          }
-          const shouldEmit = configFn ? configFn(event as any, this.actions[actionName] as Action) : true;
-          if (shouldEmit) {
-            console.log("emitting: ", actionName);
-            this.eventEmitter.emit(actionName, this.actions[actionName]);
-          }
-        }
+      } else if (this.mouseInfo.isJustReleased && wasDragging) {
+        evDragType = ":dragEnd";
+        this.mouseInfo.isDragging = false;
       }
+
+      if (evHoverType) {
+        this.handleEmitActions(evHoverType, event);
+      }
+
+      if (evDragType) {
+        this.handleEmitActions(evDragType, event);
+      }
+
+      if (evMouseBtnType) {
+        this.handleEmitActions(evMouseBtnType, event);
+      }
+
+      this.handleEmitActions(evType, event);
     }
 
-    const inputName = event.type as keyof Inputs;
+  }
+
+  private handleEmitActions(evType: string, event: Event) {
+    const inputName = evType as keyof Inputs;
     let actions = this.indexedByInputEvent[inputName];
-    if (!actions || (event.type === "click" && wasDragging)) return;
+    if (!actions) return;
 
     for (const [actionName, { configFn }] of Object.entries(actions ?? {})) {
       if (!this.actions[actionName]) {
@@ -298,6 +275,5 @@ export class InputManager {
         this.eventEmitter.emit(actionName, this.actions[actionName]);
       }
     }
-
-  };
+  }
 }
