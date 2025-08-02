@@ -11,7 +11,7 @@ import { GridPositioning } from "./main/components/GridPositioning";
 
 export const main = new Main(
   document.getElementById("canvas-container") as HTMLElement,
-  { addHelpers: true }
+  { addHelpers: false }
 );
 
 // create a plane to place the cards on
@@ -25,11 +25,20 @@ for (let i = 0; i < 10; i++) {
   const card = new Card(main);
   card.cardId = i;
   card.position.z = Number((card.boundingBox.z * 0.5).toFixed(5));
+  card.inputManager.eventEmitter.on("drag", (isFaceUp: boolean) => {
+    console.log("drag", isFaceUp);
+  });
   cards.push(card);
   main.scene.add(card);
 }
 
 const grid = new GridPositioning(main, cards);
 grid.position.z = cards[0]?.position.z ?? 0;
-grid.fanOut("x", 0.1);
+const startPositions = grid.fanOut("x", 0.1);
 main.scene.add(grid);
+
+cards.forEach(card => {
+  card.inputManager.eventEmitter.on("drag", (isFaceUp: boolean) => {
+    console.log("drag", isFaceUp);
+  });
+});

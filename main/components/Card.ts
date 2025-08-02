@@ -36,8 +36,13 @@ export class Card extends CustomObject3D {
     this.inputManager = new InputManager(
       this.root.renderer.domElement,
       {
+        drag: {
+          ":dragStart": (_ev, action) => (action.mouseInfo.isHitTestSuccess),
+          ":dragMove": (_ev, action) => (action.mouseInfo.isHitTestSuccess),
+          ":dragEnd": (_ev, action) => (action.mouseInfo.isHitTestSuccess),
+        },
         selected: {
-          click: (_ev, action) => (action.isHitTestSuccess),
+          click: (_ev, action) => (action.mouseInfo.isHitTestSuccess),
         },
         scaleUp: {
           ":hoverIn": () => true,

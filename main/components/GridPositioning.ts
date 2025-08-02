@@ -11,7 +11,8 @@ export class GridPositioning extends CustomObject3D {
     this.objects = objects;
   }
 
-  fanOut(direction: "x" | "y" | "z", gap: number) {
+  fanOut(direction: "x" | "y" | "z", gap: number): THREE.Vector3[] {
+    const startPositions: THREE.Vector3[] = [];
     // use my global position to calculate the position of the objects
     const thisGlobal = this.localToWorld(this.position);
     let lastPosition = thisGlobal[direction];
@@ -19,9 +20,11 @@ export class GridPositioning extends CustomObject3D {
       // worldToLocal is passed by reference, so we need to clone the vector
       const localPos = object.worldToLocal(thisGlobal.clone());
       localPos[direction] = lastPosition;
+      startPositions.push(localPos.clone());
       object.position.set(localPos.x, localPos.y, localPos.z);
       const spacing = object.boundingBox[direction];
       lastPosition += spacing + gap;
     });
+    return startPositions;
   }
 }

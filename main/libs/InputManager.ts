@@ -2,11 +2,18 @@ import { EventEmitter } from "./EventEmitter";
 import { Object3D, Camera, Vector2, Raycaster } from "three";
 
 export type Action = {
-  mouseScreenPosition: Vector2;
+  mouseInfo: {
+    screenPosition: Vector2;
+    isPressed: boolean;
+    pressedStrength: number;
+    isJustPressed: boolean;
+    isJustReleased: boolean;
+    isHitTestSuccess: boolean;
+    isDragging: boolean;
+  };
   pressedStrength: number;
   isJustPressed: boolean;
   isJustReleased: boolean;
-  isHitTestSuccess: boolean;
 };
 
 interface Inputs {
@@ -35,12 +42,9 @@ interface Inputs {
   focus?: (event: Event, action: Action) => any;
   blur?: (event: Event, action: Action) => any;
   contextmenu?: (event: Event, action: Action) => any;
-  ":drag"?: (event: DragEvent, action: Action) => any;
-  ":dragend"?: (event: DragEvent, action: Action) => any;
-  ":dragenter"?: (event: DragEvent, action: Action) => any;
-  ":dragleave"?: (event: DragEvent, action: Action) => any;
-  ":dragover"?: (event: DragEvent, action: Action) => any;
-  ":dragexit"?: (event: DragEvent, action: Action) => any;
+  ":dragStart"?: (event: DragEvent, action: Action) => any;
+  ":dragMove"?: (event: DragEvent, action: Action) => any;
+  ":dragEnd"?: (event: DragEvent, action: Action) => any;
   ":hoverIn"?: (event: PointerEvent, action: Action) => any;
   ":hoverOut"?: (event: PointerEvent, action: Action) => any;
   pointerdown?: (event: PointerEvent, action: Action) => any;
@@ -58,9 +62,17 @@ export class InputManager {
   private actionDefs: ActionDefs;
   private actions: Record<string, Action> = {};
   public eventEmitter: EventEmitter;
-  private lastMouseScreenPosition: Vector2;
+  private mouseInfo = {
+    screenPosition: new Vector2(),
+    isPressed: false,
+    pressedStrength: 0,
+    isJustPressed: false,
+    isJustReleased: false,
+    isHitTestSuccess: false,
+    isDragging: false,
+  };
   private hitTestObjects: { camera?: Camera; object?: Object3D };
-  private lastHitTestSuccess: boolean = false;
+  private lastEventType: string = "";
   private listenersCreated: Record<
     string,
     { listener: (event: Event) => void; inputName: string }
@@ -83,7 +95,6 @@ export class InputManager {
     };
     this.actionDefs = actionDefs;
     this.eventEmitter = new EventEmitter();
-    this.lastMouseScreenPosition = new Vector2();
 
     this.init();
   }
@@ -107,25 +118,44 @@ export class InputManager {
         };
         console.log("indexed: ", _inputName, ": ", actionName);
 
-        let convertedInputName = _inputName;
+        let convertedInputNames = [_inputName];
         if (_inputName.startsWith(":")) {
-          convertedInputName = "pointermove";
-          console.log("converted: ", convertedInputName, "from: ", _inputName);
+          convertedInputNames = ["pointermove"];
+          if (_inputName.startsWith(":drag")) {
+            convertedInputNames = ["pointerdown", "pointermove", "pointerup"];
+          }
+          console.log("converted: ", convertedInputNames, "from: ", _inputName);
         }
 
-        if (!this.listenersCreated[convertedInputName]) {
-          this.canvas.addEventListener(convertedInputName, this.handleInput);
-          this.listenersCreated[convertedInputName] = {
-            listener: this.handleInput,
-            inputName: convertedInputName,
-          };
+        for (const convertedInputName of convertedInputNames) {
+          if (!this.listenersCreated[convertedInputName]) {
+            this.canvas.addEventListener(convertedInputName, this.handleInput);
+            this.listenersCreated[convertedInputName] = {
+              listener: this.handleInput,
+              inputName: convertedInputName,
+            };
+          }
         }
       }
     }
   }
 
   handleInput(event: Event) {
-    // @todo debounce the mouse events to optimize performance
+    const wasPressed = this.mouseInfo.isPressed;
+    const wasHitTestSuccess = this.mouseInfo.isHitTestSuccess;
+    const wasDragging = this.mouseInfo.isDragging;
+
+    const lastEventType = this.lastEventType;
+    this.lastEventType = event.type;
+
+    this.mouseInfo.isJustReleased = false;
+    if (lastEventType === "click") {
+      this.mouseInfo.isJustPressed = false;
+      this.mouseInfo.isPressed = false;
+      this.mouseInfo.isJustReleased = true;
+    }
+
+    // @todo singleto mouse logic for performance
     if (
       event instanceof MouseEvent ||
       event instanceof PointerEvent ||
@@ -140,30 +170,95 @@ export class InputManager {
         event instanceof MouseEvent || event instanceof PointerEvent
           ? event.clientY
           : event.touches[0]?.clientY;
-      this.lastMouseScreenPosition = new Vector2(
-        ((clientX ?? 0 - rect.left) / this.canvas.offsetWidth) * 2 - 1,
-        (-(clientY ?? 0 - rect.top) / this.canvas.offsetHeight) * 2 + 1
-      );
-
-      const wasHitTestSuccess = this.lastHitTestSuccess;
+      this.mouseInfo.screenPosition.x = ((clientX ?? 0 - rect.left) / this.canvas.offsetWidth) * 2 - 1;
+      this.mouseInfo.screenPosition.y = (-(clientY ?? 0 - rect.top) / this.canvas.offsetHeight) * 2 + 1;
 
       if (this.hitTestObjects.camera && this.hitTestObjects.object) {
         const raycaster = new Raycaster();
         raycaster.setFromCamera(
-          this.lastMouseScreenPosition,
+          this.mouseInfo.screenPosition,
           this.hitTestObjects.camera
         );
         const intersects = raycaster.intersectObject(
           this.hitTestObjects.object
         );
-        this.lastHitTestSuccess = intersects.length > 0;
+        this.mouseInfo.isHitTestSuccess = intersects.length > 0;
       }
 
-      // then emit the action
-      if (wasHitTestSuccess !== this.lastHitTestSuccess) {
-        const hoverInputName = this.lastHitTestSuccess ? ":hoverIn" : ":hoverOut";
-        const actionsToEmit = this.indexedByInputEvent[hoverInputName];
-        for (const [actionName, { configFn }] of Object.entries(actionsToEmit ?? {})) {
+      // update the mouse info
+      if (this.mouseInfo.isJustReleased) {
+        this.mouseInfo.isJustReleased = false;
+      }
+
+      switch (event.type) {
+        case "click":
+          console.log("click");
+          this.mouseInfo.isJustPressed = true;
+          this.mouseInfo.isPressed = true;
+          break;
+        case "mousedown":
+        case "pointerdown":
+        case "touchstart":
+          if (!wasPressed) {
+            this.mouseInfo.isJustPressed = true;
+          }
+          console.log("set isPressed to true");
+          this.mouseInfo.isPressed = true;
+          break;
+        case "mouseup":
+        case "pointerup":
+        case "touchend":
+          if (wasPressed) {
+            this.mouseInfo.isJustReleased = true;
+          }
+          console.log("set isPressed to false");
+          this.mouseInfo.isPressed = false;
+          break;
+      }
+
+
+      // handle hover events
+      if (wasHitTestSuccess !== this.mouseInfo.isHitTestSuccess) {
+        const hoverInputName = this.mouseInfo.isHitTestSuccess ? ":hoverIn" : ":hoverOut";
+        const hoverActionsToEmit = this.indexedByInputEvent[hoverInputName];
+        for (const [actionName, { configFn }] of Object.entries(hoverActionsToEmit ?? {})) {
+          if (!this.actions[actionName]) {
+            this.actions[actionName] = {
+              mouseInfo: this.mouseInfo,
+              pressedStrength: 0,
+              isJustPressed: this.mouseInfo.isJustPressed,
+              isJustReleased: this.mouseInfo.isJustReleased,
+            };
+          }
+          const shouldEmit = configFn ? configFn(event as any, this.actions[actionName] as Action) : true;
+          if (shouldEmit) {
+            console.log("emitting: ", actionName);
+            this.eventEmitter.emit(actionName, this.actions[actionName]);
+          }
+        }
+      }
+
+      // handle drag events
+      this.mouseInfo.isDragging = false;
+      if (event.type.endsWith("move") && this.mouseInfo.isPressed) {
+        let dragInputName = ":drag";
+        this.mouseInfo.isDragging = true;
+        if (this.mouseInfo.isJustPressed) {
+          dragInputName = ":dragStart";
+        } else if (this.mouseInfo.isJustReleased) {
+          dragInputName = ":dragEnd";
+          this.mouseInfo.isDragging = false;
+        }
+        const dragActionsToEmit = this.indexedByInputEvent[dragInputName];
+        for (const [actionName, { configFn }] of Object.entries(dragActionsToEmit ?? {})) {
+          if (!this.actions[actionName]) {
+            this.actions[actionName] = {
+              mouseInfo: this.mouseInfo,
+              pressedStrength: 0,
+              isJustPressed: this.mouseInfo.isJustPressed,
+              isJustReleased: this.mouseInfo.isJustReleased,
+            };
+          }
           const shouldEmit = configFn ? configFn(event as any, this.actions[actionName] as Action) : true;
           if (shouldEmit) {
             console.log("emitting: ", actionName);
@@ -175,29 +270,22 @@ export class InputManager {
 
     const inputName = event.type as keyof Inputs;
     let actions = this.indexedByInputEvent[inputName];
-    if (inputName.endsWith("move")) {
-      actions = {
-        ...actions
-      }
-    }
-    if (!actions) return;
+    if (!actions || (event.type === "click" && wasDragging)) return;
 
     for (const [actionName, { configFn }] of Object.entries(actions ?? {})) {
       if (!this.actions[actionName]) {
         this.actions[actionName] = {
-          mouseScreenPosition: new Vector2(),
+          mouseInfo: this.mouseInfo,
           pressedStrength: 0,
           isJustPressed: false,
           isJustReleased: false,
-          isHitTestSuccess: false
         };
       }
 
       // update the mouse screen position, event for non mouse events
       // this way user can say when key pressed, AND mouse is over the object, etc.
-      this.actions[actionName].mouseScreenPosition =
-        this.lastMouseScreenPosition;
-      this.actions[actionName].isHitTestSuccess = this.lastHitTestSuccess;
+      this.actions[actionName].mouseInfo =
+        this.mouseInfo;
 
       // now let the user update any input data
       let shouldEmit = true;
