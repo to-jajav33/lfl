@@ -75,7 +75,13 @@ export class Card extends CustomObject3D {
     this.inputManager.eventEmitter.on("scaleUp", this.scaleUp);
     this.inputManager.eventEmitter.on("scaleDown", this.scaleDown);
 
+    this.addEventListener("added", () => {
+      console.log("added");
+      this.inputManager.init();
+    });
+
     this.addEventListener("removed", () => {
+      console.log("removed");
       this.inputManager.destroy();
     });
   }

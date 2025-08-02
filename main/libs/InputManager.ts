@@ -98,19 +98,20 @@ export class InputManager {
     };
     this.actionDefs = actionDefs;
     this.eventEmitter = new EventEmitter();
-
-    this.init();
   }
 
   destroy() {
-    this.eventEmitter.destroy();
+    this.indexedByInputEvent = {};
+    this.listenersCreated = {};
+    this.actions = {};
     // remove all canvas event listeners
     for (const listener of Object.values(this.listenersCreated)) {
       this.canvas.removeEventListener(listener.inputName, listener.listener);
     }
   }
 
-  private init() {
+  public init(actionDefs?: ActionDefs) {
+    this.actionDefs = actionDefs ?? this.actionDefs;
     // optimize by indexing the input names
     for (const [actionName, inputs] of Object.entries(this.actionDefs)) {
       for (const [_inputName, configFn] of Object.entries(inputs)) {

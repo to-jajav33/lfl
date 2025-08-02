@@ -17,9 +17,9 @@ export const main = new Main(
 );
 
 // create a plane to place the cards on
-const plane = new THREE.PlaneGeometry(10, 10);
+const planeGeometry = new THREE.PlaneGeometry(10, 10);
 const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x555555 });
-const planeMesh = new THREE.Mesh(plane, planeMaterial);
+const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
 main.scene.add(planeMesh);
 
 const cards = [] as Card[];
@@ -33,8 +33,10 @@ for (let i = 0; i < 10; i++) {
 
 const grid = new GridPositioning(main, cards);
 grid.position.z = cards[0]?.position.z ?? 0;
-main.scene.add(grid);
 const startPositions = grid.fanOut("x", 0.1);
+grid.add(...cards);
+grid.position.x = planeMesh.position.x - grid.boundingBox.x * 0.5 + (cards[0]?.boundingBox.x ?? 0) * 0.5;
+main.scene.add(grid);
 let lastMovementX;
 cards.forEach(card => {
   card.inputManager.eventEmitter.on("dragMove", (action: Action) => {

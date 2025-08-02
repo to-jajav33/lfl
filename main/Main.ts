@@ -36,7 +36,7 @@ export class Main {
     this._renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
     this._camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    this._camera.position.set(0, 10, 10);
+    this._camera.position.set(0, 0, 10);
     this._camera.lookAt(0, 0, 0);
 
     this.scene = new THREE.Scene();
@@ -93,6 +93,14 @@ export class Main {
 
   get renderer() {
     return this._renderer;
+  }
+
+  getOtherBoundingBox(other: THREE.Object3D) {
+    const boundingBox = new THREE.Box3().setFromObject(other);
+    const size = new THREE.Vector3();
+    boundingBox.getSize(size);
+
+    return size;
   }
 
   tweenTo(target: gsap.TweenTarget, duration: number, vars: gsap.TweenVars, ease: gsap.EaseFunction, label: string = ""): gsap.core.Timeline & { whenComplete: Promise<void> } {
