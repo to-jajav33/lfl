@@ -2,14 +2,14 @@ import * as THREE from "three";
 import { CustomObject3D } from "./CustomObject3D";
 import { Main } from "../Main";
 import { InputManager } from "../libs/InputManager";
-import * as gsap from "gsap";
+import * as AllGSAP from "gsap";
 
 export class Card extends CustomObject3D {
   cardId: number = 0;
   inputManager: InputManager;
   isFaceUp: boolean;
-  lastFlipTween: InstanceType<typeof gsap.default.core.Timeline> & { whenComplete: Promise<void> } | null;
-  lastScaleTween: InstanceType<typeof gsap.default.core.Timeline> & { whenComplete: Promise<void> } | null;
+  lastFlipTween: InstanceType<typeof AllGSAP.default.core.Timeline> & { whenComplete: Promise<void> } | null;
+  lastScaleTween: InstanceType<typeof AllGSAP.default.core.Timeline> & { whenComplete: Promise<void> } | null;
 
   constructor(root: Main) {
     super(root);
@@ -73,11 +73,11 @@ export class Card extends CustomObject3D {
     if (!this.isFaceUp) {
       this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
         y: Math.PI,
-      }, gsap.Linear.easeNone, ":playhead");
+      }, AllGSAP.Linear.easeNone, ":playhead");
     } else {
       this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
         y: 0
-      }, gsap.Linear.easeNone, ":playhead");
+      }, AllGSAP.Linear.easeNone, ":playhead");
     }
     this.isFaceUp = !this.isFaceUp;
   }
@@ -89,7 +89,7 @@ export class Card extends CustomObject3D {
       x: 1.1,
       y: 1.1,
       z: 1.0,
-    }, gsap.Linear.easeNone, ":playhead");
+    }, AllGSAP.Linear.easeNone, ":playhead");
   }
 
   scaleDown(action: { isHitTestSuccess: boolean }) {
@@ -99,6 +99,6 @@ export class Card extends CustomObject3D {
       x: 1.0,
       y: 1.0,
       z: 1.0,
-    }, gsap.Linear.easeNone, ":playhead");
+    }, AllGSAP.Linear.easeNone, ":playhead");
   }
 }

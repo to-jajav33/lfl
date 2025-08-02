@@ -10,6 +10,8 @@ export type Action = {
     isJustReleased: boolean;
     isHitTestSuccess: boolean;
     isDragging: boolean;
+    movementX: number;
+    movementY: number;
   };
   pressedStrength: number;
   isJustPressed: boolean;
@@ -70,6 +72,8 @@ export class InputManager {
     isJustReleased: false,
     isHitTestSuccess: false,
     isDragging: false,
+    movementX: 0,
+    movementY: 0
   };
   private hitTestObjects: { camera?: Camera; object?: Object3D };
   private listenersCreated: Record<
@@ -147,6 +151,7 @@ export class InputManager {
     const wasHitTestSuccess = this.mouseInfo.isHitTestSuccess;
     const wasJustPressed = this.mouseInfo.isJustPressed;
     const wasDragging = this.mouseInfo.isDragging;
+    const lastScreenPosition = this.mouseInfo.screenPosition.clone();
 
     // @todo singleto mouse logic for performance
     if (
@@ -165,6 +170,11 @@ export class InputManager {
           : event.touches[0]?.clientY;
       this.mouseInfo.screenPosition.x = ((clientX ?? 0 - rect.left) / this.canvas.offsetWidth) * 2 - 1;
       this.mouseInfo.screenPosition.y = (-(clientY ?? 0 - rect.top) / this.canvas.offsetHeight) * 2 + 1;
+
+      const movementX = this.mouseInfo.screenPosition.x - lastScreenPosition.x;
+      const movementY = this.mouseInfo.screenPosition.y - lastScreenPosition.y;
+      this.mouseInfo.movementX += movementX;
+      this.mouseInfo.movementX += movementY;
 
       if (this.hitTestObjects.camera && this.hitTestObjects.object) {
         const raycaster = new Raycaster();
@@ -220,12 +230,16 @@ export class InputManager {
         this.mouseInfo.isDragging = true;
         if (!wasDragging) {
           evDragType = ":dragStart";
+          this.mouseInfo.movementX = 0;
+          this.mouseInfo.movementY = 0;
         }
       }
 
       if (!this.mouseInfo.isPressed && wasDragging) {
         evDragType = ":dragEnd";
         this.mouseInfo.isDragging = false;
+        this.mouseInfo.movementX = 0;
+        this.mouseInfo.movementY = 0;
       }
 
       if (evHoverType) {
