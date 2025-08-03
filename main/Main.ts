@@ -7,14 +7,14 @@ export class Main {
   private root: Main;
   private container: HTMLElement;
   private _renderer: THREE.WebGLRenderer;
-  private _camera: THREE.OrthographicCamera;
+  private _camera: THREE.OrthographicCamera | THREE.PerspectiveCamera;
   private controls?: OrbitControls;
 
   public scene: THREE.Scene;
   mainTimeline: gsap.core.Timeline;
   startOfFrame: number = performance.now();
   fps: number = 60;
-  constructor(container: HTMLElement, { addHelpers = true, fps = 60 }: { addHelpers?: boolean, fps?: number }) {
+  constructor(container: HTMLElement, { addHelpers = true, fps = 60, cameraType = "orthographic" }: { addHelpers?: boolean, fps?: number, cameraType?: "orthographic" | "perspective" }) {
     this.loop = this.loop.bind(this);
     this.resize = this.resize.bind(this);
 
@@ -36,7 +36,13 @@ export class Main {
     this._renderer.shadowMap.needsUpdate = true;
     this._renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
-    this._camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 0.1, 50);
+    const near = 0.1;
+    const far = 1000;
+    if (cameraType === "orthographic") {
+      this._camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, near, far);
+    } else {
+      this._camera = new THREE.PerspectiveCamera(75, width / height, near, far);
+    }
     this._camera.position.set(0, 0, 10);
     // this._camera.lookAt(0, 0, 0);
 
@@ -54,7 +60,7 @@ export class Main {
       this.controls.dampingFactor = 0.25;
 
       // Grid
-      const gridSize = 10;
+      const gridSize = width;
       const gridColor = 0x550000;
       const gridHelper = new THREE.GridHelper(
         gridSize,
@@ -65,7 +71,7 @@ export class Main {
       this.scene.add(gridHelper);
 
       // Grid vertical
-      const gridSizeVertical = 10;
+      const gridSizeVertical = height;
       const gridColorVertical = 0x005500;
       const gridHelperVertical = new THREE.GridHelper(
         gridSizeVertical,
@@ -132,6 +138,8 @@ export class Main {
       this._camera.right = frustumWidth / 2;
       this._camera.top = frustumHeight / 2;
       this._camera.bottom = -frustumHeight / 2;
+    } else {
+      this._camera.aspect = aspect;
     }
     this._camera.updateProjectionMatrix();
 

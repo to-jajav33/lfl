@@ -6,6 +6,13 @@ import * as AllGSAP from "gsap";
 import { FontLoader } from "three/addons/loaders/FontLoader.js";
 import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
 import * as FontHelvetikerJSON from "three/examples/fonts/helvetiker_regular.typeface.json";
+// @ts-ignore
+import flipFragmentShader from "../shaders/flip.fragment.glsl" with { type: "text" };
+// @ts-ignore
+import flipVertexShader from "../shaders/flip.vertex.glsl" with { type: "text" };
+// @ts-ignore
+import cardBackTexturePath from "../assets/card-back.png";
+console.log(cardBackTexturePath);
 
 export class Card extends CustomObject3D {
   cardId: number = 0;
@@ -14,6 +21,16 @@ export class Card extends CustomObject3D {
   lastFlipTween: InstanceType<typeof AllGSAP.default.core.Timeline> & { whenComplete: Promise<void> } | null;
   lastScaleTween: InstanceType<typeof AllGSAP.default.core.Timeline> & { whenComplete: Promise<void> } | null;
   labelValue: string;
+  uniformsBack: {
+    uRotate: { value: number };
+    uTexture: { value: THREE.Texture };
+  };
+  // uniformsFront: {
+  //   uRotate: { value: number };
+  //   uTexture: { value: THREE.Texture };
+  // };
+  textureLoader: THREE.TextureLoader;
+
   constructor(root: Main, label: string = "?", width: number = 1) {
     super(root);
 
@@ -26,30 +43,62 @@ export class Card extends CustomObject3D {
     this.isFaceUp = false;
     this.lastFlipTween = null;
     this.lastScaleTween = null;
+    this.textureLoader = new THREE.TextureLoader();
 
     const cardRatio = 3 / 2.5;
     const cardThickness = 0.01;
-    const cardGeometry = new THREE.BoxGeometry(
+    const subdivision = 32;
+
+    this.uniformsBack = {
+      uRotate: { value: Math.PI * 0.0 },
+      uTexture: { value: this.textureLoader.load(cardBackTexturePath) },
+    };
+    const cardBackGeometry = new THREE.PlaneGeometry(
       width / cardRatio,
       cardRatio * width,
-      cardThickness
+      subdivision,
+      subdivision
     );
-    const cardMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc });
-    const cardMesh = new THREE.Mesh(cardGeometry, cardMaterial);
-    this.add(cardMesh);
-
-    const font = new FontLoader().parse(FontHelvetikerJSON);
-    const depth = 0.01;
-    const labelGeometry = new TextGeometry(label, {
-      font,
-      size: 0.5 * width,
-      depth,
+    const cardBackMaterial = new THREE.ShaderMaterial({
+      vertexShader: flipVertexShader,
+      fragmentShader: flipFragmentShader,
+      uniforms: this.uniformsBack,
     });
-    labelGeometry.computeBoundingBox();
-    labelGeometry.center();
-    const labelMesh = new THREE.Mesh(labelGeometry, new THREE.MeshBasicMaterial({ color: 0x000000 }));
-    labelMesh.position.z = depth * 0.5;
-    this.add(labelMesh);
+    const cardBackMesh = new THREE.Mesh(cardBackGeometry, cardBackMaterial);
+    this.add(cardBackMesh);
+
+    setTimeout(() => {
+      this.root.tweenTo(this.uniformsBack.uRotate, 3, { value: Math.PI * 1.0 }, AllGSAP.Linear.easeNone, ":playhead");
+    }, 1000);
+
+    // this.uniformsFront = {
+    //   uRotate: { value: 0.0 },
+    //   uTexture: { value: this.textureLoader.load(new URL("../assets/card-front.png", import.meta.url).toString()) },
+    // };
+    // const cardFrontGeometry = new THREE.PlaneGeometry(
+    //   width / cardRatio,
+    //   cardRatio * width
+    // );
+    // const cardFrontMaterial = new THREE.ShaderMaterial({
+    //   vertexShader: flipVertexShader,
+    //   fragmentShader: flipFragmentShader,
+    //   uniforms: this.uniformsFront,
+    // });
+    // const cardFrontMesh = new THREE.Mesh(cardFrontGeometry, cardFrontMaterial);
+    // this.add(cardFrontMesh);
+
+    // const font = new FontLoader().parse(FontHelvetikerJSON);
+    // const depth = 0.01;
+    // const labelGeometry = new TextGeometry(label, {
+    //   font,
+    //   size: 0.5 * width,
+    //   depth,
+    // });
+    // labelGeometry.computeBoundingBox();
+    // labelGeometry.center();
+    // const labelMesh = new THREE.Mesh(labelGeometry, new THREE.MeshBasicMaterial({ color: 0x000000 }));
+    // labelMesh.position.z = depth * 0.5;
+    // this.add(labelMesh);
 
     this.inputManager = new InputManager(
       this.root.renderer.domElement,

@@ -14,8 +14,11 @@ import * as AllGSAP from "gsap";
 const container = document.getElementById("canvas-container") as HTMLElement;
 export const main = new Main(
   container,
-  { addHelpers: false }
+  { addHelpers: false, cameraType: "orthographic" }
 );
+
+main.camera.position.set(0, 0, 500);
+main.camera.lookAt(0, 0, 0);
 
 const width = 1024;
 const height = 1024;
@@ -32,7 +35,7 @@ const cards = [] as Card[];
 for (let i = 0; i < NUMBER_OF_CARDS; i++) {
   const card = new Card(main, String(i + 1).trim(), cardWidth);
   card.cardId = i;
-  card.position.z = Number((card.boundingBox.z * 0.5).toFixed(5));
+  card.position.z = Number(Math.max(card.boundingBox.x * 0.5, 1.0).toFixed(5));
   cards.push(card);
   main.scene.add(card);
 }
