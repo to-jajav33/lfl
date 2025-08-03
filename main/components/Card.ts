@@ -37,13 +37,16 @@ export class Card extends CustomObject3D {
     this.add(cardMesh);
 
     const font = new FontLoader().parse(FontHelvetikerJSON);
+    const depth = 0.01;
     const labelGeometry = new TextGeometry(label, {
       font,
-      size: 0.5,
-      depth: 0.01,
+      size: 0.5 * width,
+      depth,
     });
+    labelGeometry.computeBoundingBox();
+    labelGeometry.center();
     const labelMesh = new THREE.Mesh(labelGeometry, new THREE.MeshBasicMaterial({ color: 0x000000 }));
-    labelMesh.position.set(-this.getOtherBoundingBox(labelMesh).x * 0.5, - this.boundingBox.y * 0.5 + this.getOtherBoundingBox(labelMesh).y * 0.5, 0.0);
+    labelMesh.position.z = depth * 0.5;
     this.add(labelMesh);
 
     this.inputManager = new InputManager(
