@@ -16,6 +16,7 @@ export class Main {
   fps: number = 60;
   constructor(container: HTMLElement, { addHelpers = true, fps = 60 }: { addHelpers?: boolean, fps?: number }) {
     this.loop = this.loop.bind(this);
+    this.resize = this.resize.bind(this);
 
     this.root = this;
     this.container = container;
@@ -85,6 +86,9 @@ export class Main {
 
     this.mainTimeline = gsap.timeline();
     this.loop();
+
+    window.addEventListener("resize", this.resize);
+    this.resize();
   }
 
   get camera() {
@@ -101,6 +105,37 @@ export class Main {
     boundingBox.getSize(size);
 
     return size;
+  }
+
+  resize() {
+    const computedStyles = getComputedStyle(this.container);
+    const width = parseInt(computedStyles.width);
+    const height = parseInt(computedStyles.height);
+    const aspect = width / height;
+
+    if (this._camera instanceof THREE.OrthographicCamera) {
+      const WORLD_WIDTH_HEIGHT = 1024; // Example: Adjust this value to your liking
+
+      let frustumWidth;
+      let frustumHeight;
+
+      // Determine if the window is in landscape or portrait mode
+      if (width > height) { // Landscape
+        frustumHeight = WORLD_WIDTH_HEIGHT;
+        frustumWidth = frustumHeight * aspect;
+      } else { // Portrait or square
+        frustumWidth = WORLD_WIDTH_HEIGHT;
+        frustumHeight = frustumWidth / aspect;
+      }
+
+      this._camera.left = -frustumWidth / 2;
+      this._camera.right = frustumWidth / 2;
+      this._camera.top = frustumHeight / 2;
+      this._camera.bottom = -frustumHeight / 2;
+    }
+    this._camera.updateProjectionMatrix();
+
+    this._renderer.setSize(width, height);
   }
 
   tweenTo(target: gsap.TweenTarget, duration: number, vars: gsap.TweenVars, ease: gsap.EaseFunction, label: string = ""): gsap.core.Timeline & { whenComplete: Promise<void> } {
