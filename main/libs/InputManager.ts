@@ -288,7 +288,7 @@ export class InputManager {
       }
 
       if (shouldEmit) {
-        console.log("emitting: ", actionName);
+        // console.log("emitting: ", actionName);
         this.eventEmitter.emit(actionName, action);
       }
     }

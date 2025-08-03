@@ -17,10 +17,11 @@ export class GridPositioning extends CustomObject3D {
     const thisGlobal = this.localToWorld(this.position);
     let lastPosition = thisGlobal[direction];
     this.objects.forEach((object) => {
+      const globalClone = thisGlobal.clone();
       // worldToLocal is passed by reference, so we need to clone the vector
-      const localPos = object.worldToLocal(thisGlobal.clone());
+      const localPos = this.worldToLocal(globalClone);
       localPos[direction] = lastPosition;
-      startPositions.push(localPos.clone());
+      startPositions.push(globalClone);
       object.position.set(localPos.x, localPos.y, localPos.z);
       const spacing = object.boundingBox[direction];
       lastPosition += spacing + gap;
