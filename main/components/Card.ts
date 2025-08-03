@@ -12,7 +12,8 @@ import flipFragmentShader from "../shaders/flip.fragment.glsl" with { type: "tex
 import flipVertexShader from "../shaders/flip.vertex.glsl" with { type: "text" };
 // @ts-ignore
 import cardBackTexturePath from "../assets/card-back.png";
-console.log(cardBackTexturePath);
+// @ts-ignore
+import cardFrontTexturePath from "../assets/card-front.png";
 
 export class Card extends CustomObject3D {
   cardId: number = 0;
@@ -25,11 +26,12 @@ export class Card extends CustomObject3D {
     uRotate: { value: number };
     uTexture: { value: THREE.Texture };
   };
-  // uniformsFront: {
-  //   uRotate: { value: number };
-  //   uTexture: { value: THREE.Texture };
-  // };
+  uniformsFront: {
+    uRotate: { value: number };
+    uTexture: { value: THREE.Texture };
+  };
   textureLoader: THREE.TextureLoader;
+  labelMesh: THREE.Mesh;
 
   constructor(root: Main, label: string = "?", width: number = 1) {
     super(root);
@@ -50,7 +52,7 @@ export class Card extends CustomObject3D {
     const subdivision = 32;
 
     this.uniformsBack = {
-      uRotate: { value: Math.PI * 0.0 },
+      uRotate: { value: Math.PI * 1.0 },
       uTexture: { value: this.textureLoader.load(cardBackTexturePath) },
     };
     const cardBackGeometry = new THREE.PlaneGeometry(
@@ -67,38 +69,37 @@ export class Card extends CustomObject3D {
     const cardBackMesh = new THREE.Mesh(cardBackGeometry, cardBackMaterial);
     this.add(cardBackMesh);
 
-    setTimeout(() => {
-      this.root.tweenTo(this.uniformsBack.uRotate, 3, { value: Math.PI * 1.0 }, AllGSAP.Linear.easeNone, ":playhead");
-    }, 1000);
+    this.uniformsFront = {
+      uRotate: { value: 0.0 },
+      uTexture: { value: this.textureLoader.load(cardFrontTexturePath) },
+    };
+    const cardFrontGeometry = new THREE.PlaneGeometry(
+      width / cardRatio,
+      cardRatio * width,
+      subdivision,
+      subdivision
+    );
+    const cardFrontMaterial = new THREE.ShaderMaterial({
+      vertexShader: flipVertexShader,
+      fragmentShader: flipFragmentShader,
+      uniforms: this.uniformsFront,
+    });
+    const cardFrontMesh = new THREE.Mesh(cardFrontGeometry, cardFrontMaterial);
+    this.add(cardFrontMesh);
 
-    // this.uniformsFront = {
-    //   uRotate: { value: 0.0 },
-    //   uTexture: { value: this.textureLoader.load(new URL("../assets/card-front.png", import.meta.url).toString()) },
-    // };
-    // const cardFrontGeometry = new THREE.PlaneGeometry(
-    //   width / cardRatio,
-    //   cardRatio * width
-    // );
-    // const cardFrontMaterial = new THREE.ShaderMaterial({
-    //   vertexShader: flipVertexShader,
-    //   fragmentShader: flipFragmentShader,
-    //   uniforms: this.uniformsFront,
-    // });
-    // const cardFrontMesh = new THREE.Mesh(cardFrontGeometry, cardFrontMaterial);
-    // this.add(cardFrontMesh);
-
-    // const font = new FontLoader().parse(FontHelvetikerJSON);
-    // const depth = 0.01;
-    // const labelGeometry = new TextGeometry(label, {
-    //   font,
-    //   size: 0.5 * width,
-    //   depth,
-    // });
-    // labelGeometry.computeBoundingBox();
-    // labelGeometry.center();
-    // const labelMesh = new THREE.Mesh(labelGeometry, new THREE.MeshBasicMaterial({ color: 0x000000 }));
-    // labelMesh.position.z = depth * 0.5;
-    // this.add(labelMesh);
+    const font = new FontLoader().parse(FontHelvetikerJSON);
+    const depth = 0.01;
+    const labelGeometry = new TextGeometry(label, {
+      font,
+      size: 0.15 * width,
+      depth,
+    });
+    labelGeometry.computeBoundingBox();
+    labelGeometry.center();
+    const labelMesh = new THREE.Mesh(labelGeometry, new THREE.MeshBasicMaterial({ color: 0x404B36, transparent: true, opacity: 1.0 }));
+    labelMesh.position.z = depth * 0.5;
+    this.labelMesh = labelMesh;
+    this.add(labelMesh);
 
     this.inputManager = new InputManager(
       this.root.renderer.domElement,
@@ -144,13 +145,22 @@ export class Card extends CustomObject3D {
     const duration = 0.125;
 
     if (!this.isFaceUp) {
-      this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
-        y: Math.PI,
-      }, AllGSAP.Linear.easeNone, ":playhead");
+      this.lastFlipTween = this.root.tweenTo(this.uniformsBack.uRotate, duration, { value: Math.PI * 0.0 }, AllGSAP.Linear.easeNone, ":playhead");
+      this.lastFlipTween = this.root.tweenTo(this.uniformsFront.uRotate, duration, { value: Math.PI * 1.0 }, AllGSAP.Linear.easeNone, ":playhead");
+      
+      // tween opacity of labelMesh
+      this.lastFlipTween = this.root.tweenTo(this.labelMesh.material, 0.1, { opacity: 0.0 }, AllGSAP.Linear.easeNone, "<");
+
+      // this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
+      //   y: Math.PI,
+      // }, AllGSAP.Linear.easeNone, ":playhead");
     } else {
-      this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
-        y: 0
-      }, AllGSAP.Linear.easeNone, ":playhead");
+      this.lastFlipTween = this.root.tweenTo(this.uniformsBack.uRotate, duration, { value: Math.PI * 1.0 }, AllGSAP.Linear.easeNone, ":playhead");
+      this.lastFlipTween = this.root.tweenTo(this.uniformsFront.uRotate, duration, { value: Math.PI * 0.0 }, AllGSAP.Linear.easeNone, ":playhead");
+      this.lastFlipTween = this.root.tweenTo(this.labelMesh.material, 0.1, { opacity: 1.0 }, AllGSAP.Linear.easeNone, ">");
+      // this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
+      //   y: 0
+      // }, AllGSAP.Linear.easeNone, ":playhead");
     }
     this.isFaceUp = !this.isFaceUp;
   }
