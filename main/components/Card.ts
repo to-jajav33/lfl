@@ -14,7 +14,7 @@ export class Card extends CustomObject3D {
   lastFlipTween: InstanceType<typeof AllGSAP.default.core.Timeline> & { whenComplete: Promise<void> } | null;
   lastScaleTween: InstanceType<typeof AllGSAP.default.core.Timeline> & { whenComplete: Promise<void> } | null;
 
-  constructor(root: Main, label: string = "?") {
+  constructor(root: Main, label: string = "?", width: number = 1) {
     super(root);
 
     this.flip = this.flip.bind(this);
@@ -28,8 +28,8 @@ export class Card extends CustomObject3D {
     const cardRatio = 3 / 2.5;
     const cardThickness = 0.01;
     const cardGeometry = new THREE.BoxGeometry(
-      1 / cardRatio,
-      cardRatio,
+      width / cardRatio,
+      cardRatio * width,
       cardThickness
     );
     const cardMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc });

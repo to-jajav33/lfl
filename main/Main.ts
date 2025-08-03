@@ -7,7 +7,7 @@ export class Main {
   private root: Main;
   private container: HTMLElement;
   private _renderer: THREE.WebGLRenderer;
-  private _camera: THREE.PerspectiveCamera;
+  private _camera: THREE.OrthographicCamera;
   private controls?: OrbitControls;
 
   public scene: THREE.Scene;
@@ -35,9 +35,9 @@ export class Main {
     this._renderer.shadowMap.needsUpdate = true;
     this._renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
-    this._camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    this._camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 0.1, 50);
     this._camera.position.set(0, 0, 10);
-    this._camera.lookAt(0, 0, 0);
+    // this._camera.lookAt(0, 0, 0);
 
     this.scene = new THREE.Scene();
 
@@ -96,7 +96,7 @@ export class Main {
   }
 
   getOtherBoundingBox(other: THREE.Object3D) {
-    const boundingBox = new THREE.Box3().setFromObject(other);
+    const boundingBox = new THREE.Box3().setFromObject(other, true);
     const size = new THREE.Vector3();
     boundingBox.getSize(size);
 

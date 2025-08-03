@@ -11,20 +11,26 @@ import { GridPositioning } from "./main/components/GridPositioning";
 import type { Action } from "./main/libs/InputManager";
 import * as AllGSAP from "gsap";
 
+const container = document.getElementById("canvas-container") as HTMLElement;
 export const main = new Main(
-  document.getElementById("canvas-container") as HTMLElement,
+  container,
   { addHelpers: false }
 );
 
+const width = 1024;
+const height = 1024;
+
 // create a plane to place the cards on
-const planeGeometry = new THREE.PlaneGeometry(10, 10);
+const planeGeometry = new THREE.PlaneGeometry(width, height);
 const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x555555 });
 const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
 main.scene.add(planeMesh);
 
+const NUMBER_OF_CARDS = 10;
+const cardWidth = width / NUMBER_OF_CARDS;
 const cards = [] as Card[];
-for (let i = 0; i < 10; i++) {
-  const card = new Card(main, String(i + 1));
+for (let i = 0; i < NUMBER_OF_CARDS; i++) {
+  const card = new Card(main, String(i + 1).trim(), cardWidth);
   card.cardId = i;
   card.position.z = Number((card.boundingBox.z * 0.5).toFixed(5));
   cards.push(card);
@@ -33,7 +39,7 @@ for (let i = 0; i < 10; i++) {
 
 const grid = new GridPositioning(main, cards);
 grid.position.z = cards[0]?.position.z ?? 0;
-const startPositions = grid.fanOut("x", 0.1);
+const startPositions = grid.fanOut("x", cardWidth * 0.1);
 grid.add(...cards);
 grid.position.x = planeMesh.position.x - grid.boundingBox.x * 0.5 + (cards[0]?.boundingBox.x ?? 0) * 0.5;
 main.scene.add(grid);
