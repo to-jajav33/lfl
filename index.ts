@@ -43,9 +43,11 @@ const startPositions = grid.fanOut("x", cardWidth * 0.1);
 grid.add(...cards);
 grid.position.x = planeMesh.position.x - grid.boundingBox.x * 0.5 + (cards[0]?.boundingBox.x ?? 0) * 0.5;
 main.scene.add(grid);
+let lastTimeline: any;
 cards.forEach(card => {
   card.inputManager.eventEmitter.on("dragMove", (action: Action) => {
-    let nextNewPosition;
+    if (lastTimeline?.whenComplete?.status === "pending") return;
+
     // use raycast against the plane to get mouse global position
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(action.mouseInfo.screenPosition, main.camera);
@@ -66,22 +68,28 @@ cards.forEach(card => {
     if (!closestCard) return;
 
     const diff = cardLocalPosition.x - closestCard.position.x;
-    if (Math.abs(diff) > 20) return;
+    if (Math.abs(diff) > card.boundingBox.x * 0.5) return;
 
+    const iDiff = closestCard.cardId - card.cardId;
     const origId = card.cardId;
-    card.cardId = closestCard.cardId;
-    closestCard.cardId = origId;
-    console.log("swapped cards: ", card.cardId, closestCard.cardId);
+    for (let i = 0; i < Math.abs(iDiff); i++) {
+      const nextCardId = origId + ((i + 1) * Math.sign(iDiff));
+      const nextCard = cards[nextCardId];
+      if (!nextCard) continue;
 
-    nextNewPosition = startPositions[closestCard?.cardId];
-    if (!nextNewPosition) return;
+      const tempId = card.cardId;
+      card.cardId = nextCard.cardId;
+      nextCard.cardId = tempId;
+
+      const nextNewPosition = startPositions[nextCard.cardId];
+      if (!nextNewPosition) continue;
+      lastTimeline = main.tweenTo(nextCard.position, 0.2, {
+        x: nextNewPosition.x
+      }, AllGSAP.Linear.easeIn, ":playhead");
+    }
 
     cards.splice(origId, 1);
     cards.splice(card.cardId, 0, card);
-
-    main.tweenTo(closestCard.position, 0.2, {
-      x: nextNewPosition.x
-    }, AllGSAP.Linear.easeIn, ":playhead");
   });
   card.inputManager.eventEmitter.on("dragEnd", () => {
     const startPosition = startPositions[card.cardId];

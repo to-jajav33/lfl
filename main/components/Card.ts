@@ -13,9 +13,11 @@ export class Card extends CustomObject3D {
   isFaceUp: boolean;
   lastFlipTween: InstanceType<typeof AllGSAP.default.core.Timeline> & { whenComplete: Promise<void> } | null;
   lastScaleTween: InstanceType<typeof AllGSAP.default.core.Timeline> & { whenComplete: Promise<void> } | null;
-
+  labelValue: string;
   constructor(root: Main, label: string = "?", width: number = 1) {
     super(root);
+
+    this.labelValue = label;
 
     this.flip = this.flip.bind(this);
     this.scaleUp = this.scaleUp.bind(this);
