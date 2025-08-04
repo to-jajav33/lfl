@@ -100,7 +100,7 @@ cards.forEach(card => {
     main.tweenTo(card.position, 0.2, {
       x: startPosition.x,
       y: startPosition.y,
-      z: grid.position.z
+      z: 0.0
     }, AllGSAP.Linear.easeIn, ":playhead");
   })
 });
