@@ -37,6 +37,7 @@ export class Card extends CustomObject3D {
   uniformsFront: Uniforms;
   uniformsLabel: Uniforms;
   uniformsTitle: Uniforms;
+  uniformsDescription: Uniforms;
   textureLoader: THREE.TextureLoader;
   labelMesh: THREE.Mesh;
   titleMesh: THREE.Mesh;
@@ -106,7 +107,8 @@ export class Card extends CustomObject3D {
     const cardFrontMesh = new THREE.Mesh(cardFrontGeometry, cardFrontMaterial);
     this.add(cardFrontMesh);
 
-    const { texture: labelTexture } = gen2DTextTexture(this.labelValue, width / cardRatio, cardRatio * width, 48, "Helvetica", "bold");
+    const testResolutionFactor = 2.0;
+    const { texture: labelTexture } = gen2DTextTexture(this.labelValue, (width / cardRatio) * testResolutionFactor, (cardRatio * width) * testResolutionFactor, 32 * testResolutionFactor, "Helvetica", "bold");
     this.uniformsLabel = {
       uColor: { value: new THREE.Color(0x708750) },
       uRotate: { value: 0.0 },
@@ -131,12 +133,12 @@ export class Card extends CustomObject3D {
     );
     const labelMesh = new THREE.Mesh(labelGeometry, labelMaterial);
     labelMesh.position.z = depth;
-    labelMesh.scale.set(0.5, 0.5, 0.5);
+    labelMesh.scale.set(1 / testResolutionFactor, 1 / testResolutionFactor, 1 / testResolutionFactor);
     this.labelMesh = labelMesh;
     this.add(labelMesh);
 
 
-    const { texture: titleTexture } = gen2DTextTexture("STRIKE", width / cardRatio, cardRatio * width, 12, "Helvetica", "bold", 1.0);
+    const { texture: titleTexture } = gen2DTextTexture("STRIKE", (width / cardRatio) * testResolutionFactor, (cardRatio * width) * testResolutionFactor, 12 * testResolutionFactor, "Helvetica", "bold", 1.0);
     this.uniformsTitle = {
       uColor: { value: new THREE.Color(0xFFFFFF) },
       uRotate: { value: 0.0 },
@@ -160,11 +162,41 @@ export class Card extends CustomObject3D {
     );
     const titleMesh = new THREE.Mesh(titleGeometry, titleMaterial);
     titleMesh.position.z = depth * 2.0;
-    titleMesh.scale.set(0.5, 0.5, 0.5);
     titleMesh.position.y = 40.0;
     titleMesh.position.x = 13.0;
+    titleMesh.scale.set(1 / testResolutionFactor, 1 / testResolutionFactor, 1 / testResolutionFactor);
     this.titleMesh = titleMesh;
     this.add(titleMesh);
+
+
+    const { texture: descriptionTexture } = gen2DTextTexture(`Follow the rules to play this card!`, (width / cardRatio) * 2.0, (cardRatio * width) * 2.0, 20 / testResolutionFactor, "Helvetica", "bold", 1.0);
+    this.uniformsDescription = {
+      uColor: { value: new THREE.Color(0x708750) },
+      uRotate: { value: 0.0 },
+      uTexture: { value: descriptionTexture },
+      uTiltX: { value: 0.0 },
+      uUseColor: { value: true },
+    };
+    const descriptionMaterial = new THREE.ShaderMaterial({
+      vertexShader: flipVertexShader,
+      fragmentShader: flipFragmentShader,
+      uniforms: this.uniformsDescription,
+      transparent: true,
+      opacity: 0.5,
+    });
+
+    const descriptionGeometry = new THREE.PlaneGeometry(
+      width / cardRatio,
+      cardRatio * width,
+      subdivision,
+      subdivision
+    );
+    const descriptionMesh = new THREE.Mesh(descriptionGeometry, descriptionMaterial);
+    descriptionMesh.position.z = depth * 2.0;
+    descriptionMesh.scale.set(0.5, 0.5, 0.5);
+    descriptionMesh.position.y = -35.0;
+    descriptionMesh.position.x = 11.0;
+    this.add(descriptionMesh);
 
     this.inputManager = new InputManager(
       this.root.renderer.domElement,
@@ -213,6 +245,7 @@ export class Card extends CustomObject3D {
       const tweenFrontFold = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
       const tweenLabelFold = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
       const tweenTitleFold = this.root.tweenTo(this.uniformsTitle.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
+      const tweenDescriptionFold = this.root.tweenTo(this.uniformsDescription.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
       const tweenBackFold = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: -tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
 
       const tweenRotateWhole = this.root.tweenTo(this.rotation, duration * 0.5, {
@@ -223,12 +256,14 @@ export class Card extends CustomObject3D {
       const tweenFrontFoldReverse = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenLabelFoldReverse = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenTitleFoldReverse = this.root.tweenTo(this.uniformsTitle.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
+      const tweenDescriptionFoldReverse = this.root.tweenTo(this.uniformsDescription.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenBackFoldReverse = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
     } else {
       const tweenRotateFront = this.root.tweenTo(this.uniformsFront.uRotate, duration * 0.5, { value: Math.PI * 0.5 }, AllGSAP.Linear.easeNone, ":playhead");
       const tweenFrontFold = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: -tiltX }, AllGSAP.Linear.easeNone, tweenRotateFront.labelStart);
       const tweenLabelFold = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: -tiltX }, AllGSAP.Linear.easeNone, tweenRotateFront.labelStart);
       const tweenTitleFold = this.root.tweenTo(this.uniformsTitle.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: -tiltX }, AllGSAP.Linear.easeNone, tweenRotateFront.labelStart);
+      const tweenDescriptionFold = this.root.tweenTo(this.uniformsDescription.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: -tiltX }, AllGSAP.Linear.easeNone, tweenRotateFront.labelStart);
       const tweenBackFold = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateFront.labelStart);
 
       const tweenRotateWhole = this.root.tweenTo(this.rotation, duration * 0.5, {
@@ -240,6 +275,7 @@ export class Card extends CustomObject3D {
       const tweenLabelFoldReverse = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenBackFoldReverse = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenTitleFoldReverse = this.root.tweenTo(this.uniformsTitle.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
+      const tweenDescriptionFoldReverse = this.root.tweenTo(this.uniformsDescription.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenRotateWholeReverseReset = this.root.tweenTo(this.rotation, 0.01, {
         y: 0,
       }, AllGSAP.Linear.easeNone, ">");
