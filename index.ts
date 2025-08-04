@@ -56,7 +56,8 @@ for (let i = 0; i < NUMBER_OF_CARDS; i++) {
 
 const grid = new GridPositioning(main, cards);
 grid.position.z = cards[0]?.position.z ?? 0;
-const startPositions = grid.fanOut("x", cardWidth * 0.1);
+const maxCardsPerRow = 5;
+const startPositions = grid.fanOut("x", cardWidth * 0.1, "y", maxCardsPerRow);
 grid.add(...cards);
 grid.position.x = planeMesh.position.x - grid.boundingBox.x * 0.5 + (cards[0]?.boundingBox.x ?? 0) * 0.5;
 main.scene.add(grid);
@@ -77,15 +78,25 @@ cards.forEach(card => {
     main.tweenTo(card.position, 0.2, {
       x: cardLocalPosition.x,
       y: cardLocalPosition.y,
-      z: 2.0
+      z: grid.position.z + 2.0
     }, AllGSAP.Linear.easeNone, ":playhead");
 
     // now use the local card position to find the closest card
-    const closestCard = cards.filter(c => c !== card).sort((a, b) => Math.abs(cardLocalPosition.x - a.position.x) - Math.abs(cardLocalPosition.x - b.position.x))[0];
-    if (!closestCard) return;
+    const closestStartPosition = startPositions
+      .filter((_c, i) => i !== card.cardId)
+      .sort((a, b) => {
+        // get the distance between the mouse and the start position using x and y coordinates
+        const distA = Math.sqrt(Math.pow(mouseGlobalPosition.x - a.x, 2) + Math.pow(mouseGlobalPosition.y - a.y, 2));
+        const distB = Math.sqrt(Math.pow(mouseGlobalPosition.x - b.x, 2) + Math.pow(mouseGlobalPosition.y - b.y, 2));
+        return distA - distB;
+      })[0];
+    if (!closestStartPosition) return;
 
-    const diff = cardLocalPosition.x - closestCard.position.x;
-    if (Math.abs(diff) > card.boundingBox.x * 0.5) return;
+    const diff = mouseGlobalPosition.x - closestStartPosition.x;
+    if (Math.abs(diff) > cardWidth * 0.5) return;
+
+    const closestCard = cards[startPositions.indexOf(closestStartPosition)];
+    if (!closestCard) return;
 
     const iDiff = closestCard.cardId - card.cardId;
     const origId = card.cardId;
@@ -101,7 +112,8 @@ cards.forEach(card => {
       const nextNewPosition = startPositions[nextCard.cardId];
       if (!nextNewPosition) continue;
       lastTimeline = main.tweenTo(nextCard.position, 0.2, {
-        x: nextNewPosition.x
+        x: nextNewPosition.x,
+        y: nextNewPosition.y,
       }, AllGSAP.Linear.easeIn, ":playhead");
     }
 
@@ -114,7 +126,7 @@ cards.forEach(card => {
     main.tweenTo(card.position, 0.2, {
       x: startPosition.x,
       y: startPosition.y,
-      z: 0.0
+      z: grid.position.z
     }, AllGSAP.Linear.easeIn, ":playhead");
   })
 });
