@@ -16,6 +16,7 @@ import cardBackTexturePath from "../assets/card-back.png";
 import cardFrontTexturePath from "../assets/card-front.png";
 // @ts-ignore
 import emptyTexturePath from "../assets/empty.png";
+import { gen2DTextTexture } from "../libs/generate2DTextTexture";
 
 type Uniforms = {
   uColor: { value: THREE.Color };
@@ -35,8 +36,10 @@ export class Card extends CustomObject3D {
   uniformsBack: Uniforms;
   uniformsFront: Uniforms;
   uniformsLabel: Uniforms;
+  uniformsTitle: Uniforms;
   textureLoader: THREE.TextureLoader;
   labelMesh: THREE.Mesh;
+  titleMesh: THREE.Mesh;
 
   constructor(root: Main, label: string = "?", width: number = 1) {
     super(root);
@@ -103,28 +106,7 @@ export class Card extends CustomObject3D {
     const cardFrontMesh = new THREE.Mesh(cardFrontGeometry, cardFrontMaterial);
     this.add(cardFrontMesh);
 
-    // use a canvas 2d to generate the label, then add to ThreeJS CanvasTexture. canvas should have transparent background
-    const canvas = document.createElement("canvas");
-    canvas.width = 100;
-    canvas.height = 100;
-    const ctx = canvas.getContext("2d");
-    // calculate the size of the label
-    const fontSize = 24;
-    const font = `bold ${fontSize}px Helvetica`;
-    if (ctx) {
-      canvas.width = width / cardRatio;
-      canvas.height = cardRatio * width;
-      ctx.scale(1, 1);
-      ctx.fillStyle = "rgba(0, 0, 0, 0.0)";
-      ctx.fillRect(0, 0, 100, 100);
-      ctx.fillStyle = "rgba(0, 0, 0, 1.0)";
-      ctx.font = font;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(label, canvas.width / 2, canvas.height / 2);
-    }
-    const labelTexture = new THREE.CanvasTexture(canvas);
-
+    const { texture: labelTexture } = gen2DTextTexture(this.labelValue, width / cardRatio, cardRatio * width, 48, "Helvetica", "bold");
     this.uniformsLabel = {
       uColor: { value: new THREE.Color(0x708750) },
       uRotate: { value: 0.0 },
@@ -141,15 +123,6 @@ export class Card extends CustomObject3D {
       opacity: 0.5,
     });
 
-    // const font = new FontLoader().parse(FontHelvetikerJSON);
-    // const labelGeometry = new TextGeometry(label, {
-    //   font,
-    //   size: 0.15 * width,
-    //   depth,
-    //   curveSegments: 1
-    // });
-    // labelGeometry.computeBoundingBox();
-    // labelGeometry.center();
     const labelGeometry = new THREE.PlaneGeometry(
       width / cardRatio,
       cardRatio * width,
@@ -158,8 +131,40 @@ export class Card extends CustomObject3D {
     );
     const labelMesh = new THREE.Mesh(labelGeometry, labelMaterial);
     labelMesh.position.z = depth;
+    labelMesh.scale.set(0.5, 0.5, 0.5);
     this.labelMesh = labelMesh;
     this.add(labelMesh);
+
+
+    const { texture: titleTexture } = gen2DTextTexture("STRIKE", width / cardRatio, cardRatio * width, 12, "Helvetica", "bold", 1.0);
+    this.uniformsTitle = {
+      uColor: { value: new THREE.Color(0xFFFFFF) },
+      uRotate: { value: 0.0 },
+      uTexture: { value: titleTexture },
+      uTiltX: { value: 0.0 },
+      uUseColor: { value: true },
+    };
+    const titleMaterial = new THREE.ShaderMaterial({
+      vertexShader: flipVertexShader,
+      fragmentShader: flipFragmentShader,
+      uniforms: this.uniformsTitle,
+      transparent: true,
+      opacity: 0.5,
+    });
+
+    const titleGeometry = new THREE.PlaneGeometry(
+      width / cardRatio,
+      cardRatio * width,
+      subdivision,
+      subdivision
+    );
+    const titleMesh = new THREE.Mesh(titleGeometry, titleMaterial);
+    titleMesh.position.z = depth;
+    titleMesh.scale.set(0.5, 0.5, 0.5);
+    titleMesh.position.y = 40.0;
+    titleMesh.position.x = 13.0;
+    this.titleMesh = titleMesh;
+    this.add(titleMesh);
 
     this.inputManager = new InputManager(
       this.root.renderer.domElement,
