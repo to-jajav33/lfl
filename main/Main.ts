@@ -161,6 +161,8 @@ export class Main {
     }, label);
 
     tween.whenComplete = prom;
+    tween.labelStart = label;
+    tween.labelEnd = `${label}+=${duration.toFixed(2)}`;
 
     return tween as unknown as gsap.core.Timeline & { whenComplete: Promise<void> };
   }

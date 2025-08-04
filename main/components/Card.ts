@@ -14,6 +14,16 @@ import flipVertexShader from "../shaders/flip.vertex.glsl" with { type: "text" }
 import cardBackTexturePath from "../assets/card-back.png";
 // @ts-ignore
 import cardFrontTexturePath from "../assets/card-front.png";
+// @ts-ignore
+import emptyTexturePath from "../assets/empty.png";
+
+type Uniforms = {
+  uColor: { value: THREE.Color };
+  uRotate: { value: number };
+  uTexture: { value: THREE.Texture };
+  uTiltX: { value: number };
+  uUseColor: { value: boolean };
+};
 
 export class Card extends CustomObject3D {
   cardId: number = 0;
@@ -22,14 +32,9 @@ export class Card extends CustomObject3D {
   lastFlipTween: InstanceType<typeof AllGSAP.default.core.Timeline> & { whenComplete: Promise<void> } | null;
   lastScaleTween: InstanceType<typeof AllGSAP.default.core.Timeline> & { whenComplete: Promise<void> } | null;
   labelValue: string;
-  uniformsBack: {
-    uRotate: { value: number };
-    uTexture: { value: THREE.Texture };
-  };
-  uniformsFront: {
-    uRotate: { value: number };
-    uTexture: { value: THREE.Texture };
-  };
+  uniformsBack: Uniforms;
+  uniformsFront: Uniforms;
+  uniformsLabel: Uniforms;
   textureLoader: THREE.TextureLoader;
   labelMesh: THREE.Mesh;
 
@@ -52,8 +57,11 @@ export class Card extends CustomObject3D {
     const subdivision = 32;
 
     this.uniformsBack = {
+      uColor: { value: new THREE.Color(0xFFFFFF) },
       uRotate: { value: Math.PI * 1.0 },
       uTexture: { value: this.textureLoader.load(cardBackTexturePath) },
+      uTiltX: { value: 0.0 },
+      uUseColor: { value: false },
     };
     const cardBackGeometry = new THREE.PlaneGeometry(
       width / cardRatio,
@@ -70,8 +78,11 @@ export class Card extends CustomObject3D {
     this.add(cardBackMesh);
 
     this.uniformsFront = {
+      uColor: { value: new THREE.Color(0xFFFFFF) },
       uRotate: { value: 0.0 },
       uTexture: { value: this.textureLoader.load(cardFrontTexturePath) },
+      uTiltX: { value: 0.0 },
+      uUseColor: { value: false },
     };
     const cardFrontGeometry = new THREE.PlaneGeometry(
       width / cardRatio,
@@ -87,17 +98,61 @@ export class Card extends CustomObject3D {
     const cardFrontMesh = new THREE.Mesh(cardFrontGeometry, cardFrontMaterial);
     this.add(cardFrontMesh);
 
-    const font = new FontLoader().parse(FontHelvetikerJSON);
+    // use a canvas 2d to generate the label, then add to ThreeJS CanvasTexture. canvas should have transparent background
+    const canvas = document.createElement("canvas");
+    canvas.width = 100;
+    canvas.height = 100;
+    const ctx = canvas.getContext("2d");
+    // calculate the size of the label
+    const fontSize = 24;
+    const font = `bold ${fontSize}px Helvetica`;
+    if (ctx) {
+      canvas.width = width / cardRatio;
+      canvas.height = cardRatio * width;
+      ctx.scale(1, 1);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.0)";
+      ctx.fillRect(0, 0, 100, 100);
+      ctx.fillStyle = "rgba(0, 0, 0, 1.0)";
+      ctx.font = font;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, canvas.width / 2, canvas.height / 2);
+    }
+    const labelTexture = new THREE.CanvasTexture(canvas);
+
+    this.uniformsLabel = {
+      uColor: { value: new THREE.Color(0x708750) },
+      uRotate: { value: 0.0 },
+      uTexture: { value: labelTexture },
+      uTiltX: { value: 0.0 },
+      uUseColor: { value: true },
+    };
     const depth = 0.01;
-    const labelGeometry = new TextGeometry(label, {
-      font,
-      size: 0.15 * width,
-      depth,
+    const labelMaterial = new THREE.ShaderMaterial({
+      vertexShader: flipVertexShader,
+      fragmentShader: flipFragmentShader,
+      uniforms: this.uniformsLabel,
+      transparent: true,
+      opacity: 0.5,
     });
-    labelGeometry.computeBoundingBox();
-    labelGeometry.center();
-    const labelMesh = new THREE.Mesh(labelGeometry, new THREE.MeshBasicMaterial({ color: 0x404B36, transparent: true, opacity: 1.0 }));
-    labelMesh.position.z = depth * 0.5;
+
+    // const font = new FontLoader().parse(FontHelvetikerJSON);
+    // const labelGeometry = new TextGeometry(label, {
+    //   font,
+    //   size: 0.15 * width,
+    //   depth,
+    //   curveSegments: 1
+    // });
+    // labelGeometry.computeBoundingBox();
+    // labelGeometry.center();
+    const labelGeometry = new THREE.PlaneGeometry(
+      width / cardRatio,
+      cardRatio * width,
+      subdivision,
+      subdivision
+    );
+    const labelMesh = new THREE.Mesh(labelGeometry, labelMaterial);
+    labelMesh.position.z = depth;
     this.labelMesh = labelMesh;
     this.add(labelMesh);
 
@@ -142,14 +197,23 @@ export class Card extends CustomObject3D {
   }
 
   flip(action: { isHitTestSuccess: boolean }) {
-    const duration = 0.125;
+    const duration = 0.50;
 
     if (!this.isFaceUp) {
-      this.lastFlipTween = this.root.tweenTo(this.uniformsBack.uRotate, duration, { value: Math.PI * 0.0 }, AllGSAP.Linear.easeNone, ":playhead");
-      this.lastFlipTween = this.root.tweenTo(this.uniformsFront.uRotate, duration, { value: Math.PI * 1.0 }, AllGSAP.Linear.easeNone, ":playhead");
-      
-      // tween opacity of labelMesh
-      this.lastFlipTween = this.root.tweenTo(this.labelMesh.material, 0.1, { opacity: 0.0 }, AllGSAP.Linear.easeNone, "<");
+      const tiltX = 0.5;
+      const tweenRotateBack = this.root.tweenTo(this.uniformsBack.uRotate, duration * 0.5, { value: Math.PI * 1.5 }, AllGSAP.Linear.easeNone, ":playhead");
+      const tweenFrontFold = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
+      const tweenLabelFold = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
+      const tweenBackFold = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: -tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
+
+      const tweenRotateWhole = this.root.tweenTo(this.rotation, duration * 0.5, {
+        y: -Math.PI,
+      }, AllGSAP.Linear.easeNone, tweenRotateBack.labelEnd);
+
+      const tweenRotateBackReverse = this.root.tweenTo(this.uniformsBack.uRotate, duration * 0.5, { value: Math.PI * 1.0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
+      const tweenFrontFoldReverse = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
+      const tweenLabelFoldReverse = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
+      const tweenBackFoldReverse = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
 
       // this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
       //   y: Math.PI,
@@ -157,6 +221,8 @@ export class Card extends CustomObject3D {
     } else {
       this.lastFlipTween = this.root.tweenTo(this.uniformsBack.uRotate, duration, { value: Math.PI * 1.0 }, AllGSAP.Linear.easeNone, ":playhead");
       this.lastFlipTween = this.root.tweenTo(this.uniformsFront.uRotate, duration, { value: Math.PI * 0.0 }, AllGSAP.Linear.easeNone, ":playhead");
+      // this.lastFlipTween = this.root.tweenTo(this.uniformsBack.uTiltX, duration, { startAt: { value: 1.0 }, value: 0.0 }, AllGSAP.Linear.easeNone, ":playhead");
+      // this.lastFlipTween = this.root.tweenTo(this.uniformsFront.uTiltX, duration, { startAt: { value: 1.0 }, value: 0.0 }, AllGSAP.Linear.easeNone, ":playhead");
       this.lastFlipTween = this.root.tweenTo(this.labelMesh.material, 0.1, { opacity: 1.0 }, AllGSAP.Linear.easeNone, ">");
       // this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
       //   y: 0

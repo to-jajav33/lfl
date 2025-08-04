@@ -14,7 +14,7 @@ import * as AllGSAP from "gsap";
 const container = document.getElementById("canvas-container") as HTMLElement;
 export const main = new Main(
   container,
-  { addHelpers: false, cameraType: "orthographic" }
+  { addHelpers: true, cameraType: "orthographic" }
 );
 
 main.camera.position.set(0, 0, 500);
