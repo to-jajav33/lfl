@@ -10,6 +10,7 @@ import { Card } from "./main/components/Card";
 import { GridPositioning } from "./main/components/GridPositioning";
 import { InputManager, type Action } from "./main/libs/InputManager";
 import * as AllGSAP from "gsap";
+import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
 
 const container = document.getElementById("canvas-container") as HTMLElement;
 export const main = new Main(
@@ -17,12 +18,23 @@ export const main = new Main(
   { addHelpers: false, cameraType: "orthographic" }
 );
 
+const gui = new GUI();
+gui.add(main, "showHelpers").name(`Show Helpers (h)
+Left MB: Drag to rotate camera
+Right MB: Drag to move camera
+Shift + Left MB: Drag to pan camera
+Scroll Wheel: Zoom camera
+Space: Reset camera
+`);
+
 const mainInputManager = new InputManager(main.renderer.domElement, {
   "toggleHelpers": {
     "keyup": (event: KeyboardEvent, action: Action) => {
       if (event.key === "h") {
         main.showHelpers = !main.showHelpers;
-      } else if (event.key === "r") {
+      }
+      // if space key is pressed
+      else if (event.key === " ") {
         main.camera.position.set(0, 0, 500);
         main.camera.lookAt(0, 0, 0);
       }
