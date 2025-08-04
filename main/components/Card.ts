@@ -239,13 +239,14 @@ export class Card extends CustomObject3D {
   flip(action: { isHitTestSuccess: boolean }) {
     const duration = 0.25;
     const tiltX = 0.5;
+    const tiltXOffset = 0.50;
 
     if (!this.isFaceUp) {
       const tweenRotateBack = this.root.tweenTo(this.uniformsBack.uRotate, duration * 0.5, { value: Math.PI * 1.5 }, AllGSAP.Linear.easeNone, ":playhead");
       const tweenFrontFold = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
       const tweenLabelFold = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
-      const tweenTitleFold = this.root.tweenTo(this.uniformsTitle.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
-      const tweenDescriptionFold = this.root.tweenTo(this.uniformsDescription.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
+      const tweenTitleFold = this.root.tweenTo(this.uniformsTitle.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX + tiltXOffset }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
+      const tweenDescriptionFold = this.root.tweenTo(this.uniformsDescription.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX + tiltXOffset }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
       const tweenBackFold = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: -tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
 
       const tweenRotateWhole = this.root.tweenTo(this.rotation, duration * 0.5, {
