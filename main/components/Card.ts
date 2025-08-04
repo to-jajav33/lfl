@@ -159,7 +159,7 @@ export class Card extends CustomObject3D {
       subdivision
     );
     const titleMesh = new THREE.Mesh(titleGeometry, titleMaterial);
-    titleMesh.position.z = depth;
+    titleMesh.position.z = depth * 2.0;
     titleMesh.scale.set(0.5, 0.5, 0.5);
     titleMesh.position.y = 40.0;
     titleMesh.position.x = 13.0;
@@ -205,13 +205,14 @@ export class Card extends CustomObject3D {
   }
 
   flip(action: { isHitTestSuccess: boolean }) {
-    const duration = 0.5;
+    const duration = 0.25;
     const tiltX = 0.5;
 
     if (!this.isFaceUp) {
       const tweenRotateBack = this.root.tweenTo(this.uniformsBack.uRotate, duration * 0.5, { value: Math.PI * 1.5 }, AllGSAP.Linear.easeNone, ":playhead");
       const tweenFrontFold = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
       const tweenLabelFold = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
+      const tweenTitleFold = this.root.tweenTo(this.uniformsTitle.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
       const tweenBackFold = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: -tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
 
       const tweenRotateWhole = this.root.tweenTo(this.rotation, duration * 0.5, {
@@ -221,11 +222,13 @@ export class Card extends CustomObject3D {
       const tweenRotateBackReverse = this.root.tweenTo(this.uniformsBack.uRotate, duration * 0.5, { value: Math.PI * 1.0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenFrontFoldReverse = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenLabelFoldReverse = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
+      const tweenTitleFoldReverse = this.root.tweenTo(this.uniformsTitle.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenBackFoldReverse = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
     } else {
       const tweenRotateFront = this.root.tweenTo(this.uniformsFront.uRotate, duration * 0.5, { value: Math.PI * 0.5 }, AllGSAP.Linear.easeNone, ":playhead");
       const tweenFrontFold = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: -tiltX }, AllGSAP.Linear.easeNone, tweenRotateFront.labelStart);
       const tweenLabelFold = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: -tiltX }, AllGSAP.Linear.easeNone, tweenRotateFront.labelStart);
+      const tweenTitleFold = this.root.tweenTo(this.uniformsTitle.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: -tiltX }, AllGSAP.Linear.easeNone, tweenRotateFront.labelStart);
       const tweenBackFold = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateFront.labelStart);
 
       const tweenRotateWhole = this.root.tweenTo(this.rotation, duration * 0.5, {
@@ -236,6 +239,7 @@ export class Card extends CustomObject3D {
       const tweenFrontFoldReverse = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenLabelFoldReverse = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenBackFoldReverse = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
+      const tweenTitleFoldReverse = this.root.tweenTo(this.uniformsTitle.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenRotateWholeReverseReset = this.root.tweenTo(this.rotation, 0.01, {
         y: 0,
       }, AllGSAP.Linear.easeNone, ">");
