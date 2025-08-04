@@ -8,14 +8,28 @@ import Main from "./main/Main";
 import * as THREE from "three";
 import { Card } from "./main/components/Card";
 import { GridPositioning } from "./main/components/GridPositioning";
-import type { Action } from "./main/libs/InputManager";
+import { InputManager, type Action } from "./main/libs/InputManager";
 import * as AllGSAP from "gsap";
 
 const container = document.getElementById("canvas-container") as HTMLElement;
 export const main = new Main(
   container,
-  { addHelpers: true, cameraType: "orthographic" }
+  { addHelpers: false, cameraType: "orthographic" }
 );
+
+const mainInputManager = new InputManager(main.renderer.domElement, {
+  "toggleHelpers": {
+    "keyup": (event: KeyboardEvent, action: Action) => {
+      if (event.key === "h") {
+        main.showHelpers = !main.showHelpers;
+      } else if (event.key === "r") {
+        main.camera.position.set(0, 0, 500);
+        main.camera.lookAt(0, 0, 0);
+      }
+    }
+  }
+});
+mainInputManager.init();
 
 main.camera.position.set(0, 0, 500);
 main.camera.lookAt(0, 0, 0);

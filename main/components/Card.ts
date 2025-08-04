@@ -56,6 +56,11 @@ export class Card extends CustomObject3D {
     const cardThickness = 0.01;
     const subdivision = 32;
 
+    const hitBoxGeometry = new THREE.BoxGeometry(width / cardRatio, cardRatio * width, cardThickness);
+    const hitBoxMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.01 });
+    const hitBoxMesh = new THREE.Mesh(hitBoxGeometry, hitBoxMaterial);
+    this.add(hitBoxMesh);
+
     this.uniformsBack = {
       uColor: { value: new THREE.Color(0xFFFFFF) },
       uRotate: { value: Math.PI * 1.0 },
@@ -186,21 +191,19 @@ export class Card extends CustomObject3D {
     this.inputManager.eventEmitter.on("scaleDown", this.scaleDown);
 
     this.addEventListener("added", () => {
-      console.log("added");
       this.inputManager.init();
     });
 
     this.addEventListener("removed", () => {
-      console.log("removed");
       this.inputManager.destroy();
     });
   }
 
   flip(action: { isHitTestSuccess: boolean }) {
-    const duration = 0.50;
+    const duration = 0.5;
+    const tiltX = 0.5;
 
     if (!this.isFaceUp) {
-      const tiltX = 0.5;
       const tweenRotateBack = this.root.tweenTo(this.uniformsBack.uRotate, duration * 0.5, { value: Math.PI * 1.5 }, AllGSAP.Linear.easeNone, ":playhead");
       const tweenFrontFold = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
       const tweenLabelFold = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateBack.labelStart);
@@ -214,19 +217,23 @@ export class Card extends CustomObject3D {
       const tweenFrontFoldReverse = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenLabelFoldReverse = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
       const tweenBackFoldReverse = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
-
-      // this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
-      //   y: Math.PI,
-      // }, AllGSAP.Linear.easeNone, ":playhead");
     } else {
-      this.lastFlipTween = this.root.tweenTo(this.uniformsBack.uRotate, duration, { value: Math.PI * 1.0 }, AllGSAP.Linear.easeNone, ":playhead");
-      this.lastFlipTween = this.root.tweenTo(this.uniformsFront.uRotate, duration, { value: Math.PI * 0.0 }, AllGSAP.Linear.easeNone, ":playhead");
-      // this.lastFlipTween = this.root.tweenTo(this.uniformsBack.uTiltX, duration, { startAt: { value: 1.0 }, value: 0.0 }, AllGSAP.Linear.easeNone, ":playhead");
-      // this.lastFlipTween = this.root.tweenTo(this.uniformsFront.uTiltX, duration, { startAt: { value: 1.0 }, value: 0.0 }, AllGSAP.Linear.easeNone, ":playhead");
-      this.lastFlipTween = this.root.tweenTo(this.labelMesh.material, 0.1, { opacity: 1.0 }, AllGSAP.Linear.easeNone, ">");
-      // this.lastFlipTween = this.root.tweenTo(this.rotation, duration, {
-      //   y: 0
-      // }, AllGSAP.Linear.easeNone, ":playhead");
+      const tweenRotateFront = this.root.tweenTo(this.uniformsFront.uRotate, duration * 0.5, { value: Math.PI * 0.5 }, AllGSAP.Linear.easeNone, ":playhead");
+      const tweenFrontFold = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: -tiltX }, AllGSAP.Linear.easeNone, tweenRotateFront.labelStart);
+      const tweenLabelFold = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: -tiltX }, AllGSAP.Linear.easeNone, tweenRotateFront.labelStart);
+      const tweenBackFold = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { startAt: { value: 0 }, value: tiltX }, AllGSAP.Linear.easeNone, tweenRotateFront.labelStart);
+
+      const tweenRotateWhole = this.root.tweenTo(this.rotation, duration * 0.5, {
+        y: -Math.PI * 2.0,
+      }, AllGSAP.Linear.easeNone, tweenRotateFront.labelEnd);
+
+      const tweenRotateFrontReverse = this.root.tweenTo(this.uniformsFront.uRotate, duration * 0.5, { value: Math.PI * 0.0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
+      const tweenFrontFoldReverse = this.root.tweenTo(this.uniformsFront.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
+      const tweenLabelFoldReverse = this.root.tweenTo(this.uniformsLabel.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
+      const tweenBackFoldReverse = this.root.tweenTo(this.uniformsBack.uTiltX, duration * 0.5, { value: 0 }, AllGSAP.Linear.easeNone, tweenRotateWhole.labelStart);
+      const tweenRotateWholeReverseReset = this.root.tweenTo(this.rotation, 0.01, {
+        y: 0,
+      }, AllGSAP.Linear.easeNone, ">");
     }
     this.isFaceUp = !this.isFaceUp;
   }

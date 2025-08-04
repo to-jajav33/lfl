@@ -19,24 +19,21 @@ export type Action = {
 };
 
 interface Inputs {
-  mouseDown?: (event: MouseEvent, action: Action) => any;
-  mouseUp?: (event: MouseEvent, action: Action) => any;
-  mouseMove?: (event: MouseEvent, action: Action) => any;
-  mouseWheel?: (event: WheelEvent, action: Action) => any;
-  mouseEnter?: (event: MouseEvent, action: Action) => any;
-  mouseLeave?: (event: MouseEvent, action: Action) => any;
-  mouseOver?: (event: MouseEvent, action: Action) => any;
-  mouseOut?: (event: MouseEvent, action: Action) => any;
-  mouseClick?: (event: MouseEvent, action: Action) => any;
-  mouseDoubleClick?: (event: MouseEvent, action: Action) => any;
-  mouseTripleClick?: (event: MouseEvent, action: Action) => any;
-  keyDown?: (event: KeyboardEvent, action: Action) => any;
-  keyUp?: (event: KeyboardEvent, action: Action) => any;
-  keyPress?: (event: KeyboardEvent, action: Action) => any;
-  touchStart?: (event: TouchEvent, action: Action) => any;
-  touchEnd?: (event: TouchEvent, action: Action) => any;
-  touchMove?: (event: TouchEvent, action: Action) => any;
-  touchCancel?: (event: TouchEvent, action: Action) => any;
+  mousedown?: (event: MouseEvent, action: Action) => any;
+  mouseup?: (event: MouseEvent, action: Action) => any;
+  mousemove?: (event: MouseEvent, action: Action) => any;
+  mousewheel?: (event: WheelEvent, action: Action) => any;
+  mouseenter?: (event: MouseEvent, action: Action) => any;
+  mouseleave?: (event: MouseEvent, action: Action) => any;
+  mouseover?: (event: MouseEvent, action: Action) => any;
+  mouseout?: (event: MouseEvent, action: Action) => any;
+  keydown?: (event: KeyboardEvent, action: Action) => any;
+  keyup?: (event: KeyboardEvent, action: Action) => any;
+  keypress?: (event: KeyboardEvent, action: Action) => any;
+  touchstart?: (event: TouchEvent, action: Action) => any;
+  touchend?: (event: TouchEvent, action: Action) => any;
+  touchmove?: (event: TouchEvent, action: Action) => any;
+  touchcancel?: (event: TouchEvent, action: Action) => any;
   wheel?: (event: WheelEvent, action: Action) => any;
   resize?: (event: Event, action: Action) => any;
   scroll?: (event: Event, action: Action) => any;
@@ -106,7 +103,8 @@ export class InputManager {
     this.actions = {};
     // remove all canvas event listeners
     for (const listener of Object.values(this.listenersCreated)) {
-      this.canvas.removeEventListener(listener.inputName, listener.listener);
+      const canvasOrDocument = listener.inputName.startsWith("key") ? document : this.canvas;
+      canvasOrDocument.removeEventListener(listener.inputName, listener.listener);
     }
   }
 
@@ -135,7 +133,8 @@ export class InputManager {
 
         for (const convertedInputName of convertedInputNames) {
           if (!this.listenersCreated[convertedInputName]) {
-            this.canvas.addEventListener(convertedInputName, this.handleInput);
+            const canvasOrDocument = convertedInputName.startsWith("key") ? document : this.canvas;
+            canvasOrDocument.addEventListener(convertedInputName, this.handleInput);
             this.listenersCreated[convertedInputName] = {
               listener: this.handleInput,
               inputName: convertedInputName,
@@ -254,10 +253,8 @@ export class InputManager {
       if (evMouseBtnType) {
         this.handleEmitActions(evMouseBtnType, event);
       }
-
-      this.handleEmitActions(evType, event);
     }
-
+    this.handleEmitActions(evType, event);
   }
 
   getAction(actionName: string) {

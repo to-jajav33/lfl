@@ -8,12 +8,15 @@ export class Main {
   private container: HTMLElement;
   private _renderer: THREE.WebGLRenderer;
   private _camera: THREE.OrthographicCamera | THREE.PerspectiveCamera;
-  private controls?: OrbitControls;
+  private controls: OrbitControls;
 
   public scene: THREE.Scene;
   mainTimeline: gsap.core.Timeline;
   startOfFrame: number = performance.now();
   fps: number = 60;
+  _showHelpers: boolean = false;
+  helpersContainer: THREE.Object3D;
+
   constructor(container: HTMLElement, { addHelpers = true, fps = 60, cameraType = "orthographic" }: { addHelpers?: boolean, fps?: number, cameraType?: "orthographic" | "perspective" }) {
     this.loop = this.loop.bind(this);
     this.resize = this.resize.bind(this);
@@ -50,43 +53,45 @@ export class Main {
 
     this.scene.add(this._camera);
 
-    if (addHelpers) {
-      // Controls
-      this.controls = new OrbitControls(
-        this._camera,
-        this._renderer.domElement
-      );
-      this.controls.enableDamping = true;
-      this.controls.dampingFactor = 0.25;
+    this.helpersContainer = new THREE.Object3D();
+    this.scene.add(this.helpersContainer);
 
-      // Grid
-      const gridSize = width;
-      const gridColor = 0x550000;
-      const gridHelper = new THREE.GridHelper(
-        gridSize,
-        gridSize,
-        gridColor,
-        gridColor
-      );
-      this.scene.add(gridHelper);
+    // Controls
+    this.controls = new OrbitControls(
+      this._camera,
+      this._renderer.domElement
+    );
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.25;
+    this.showHelpers = addHelpers;
 
-      // Grid vertical
-      const gridSizeVertical = height;
-      const gridColorVertical = 0x005500;
-      const gridHelperVertical = new THREE.GridHelper(
-        gridSizeVertical,
-        gridSizeVertical,
-        gridColorVertical,
-        gridColorVertical
-      );
-      gridHelperVertical.rotateX(-Math.PI * 0.5);
-      this.scene.add(gridHelperVertical);
+    // Grid
+    const gridSize = width;
+    const gridColor = 0x550000;
+    const gridHelper = new THREE.GridHelper(
+      gridSize,
+      gridSize,
+      gridColor,
+      gridColor
+    );
+    this.helpersContainer.add(gridHelper);
 
-      // Axes
-      const axesSize = 4;
-      const axesHelper = new THREE.AxesHelper(axesSize);
-      this.scene.add(axesHelper);
-    }
+    // Grid vertical
+    const gridSizeVertical = height;
+    const gridColorVertical = 0x005500;
+    const gridHelperVertical = new THREE.GridHelper(
+      gridSizeVertical,
+      gridSizeVertical,
+      gridColorVertical,
+      gridColorVertical
+    );
+    gridHelperVertical.rotateX(-Math.PI * 0.5);
+    this.helpersContainer.add(gridHelperVertical);
+
+    // Axes
+    const axesSize = 4;
+    const axesHelper = new THREE.AxesHelper(axesSize);
+    this.helpersContainer.add(axesHelper);
 
     this.container.appendChild(this._renderer.domElement);
 
@@ -103,6 +108,16 @@ export class Main {
 
   get renderer() {
     return this._renderer;
+  }
+
+  get showHelpers() {
+    return this._showHelpers;
+  }
+
+  set showHelpers(value: boolean) {
+    this._showHelpers = value;
+    this.controls.enabled = this.showHelpers;
+    this.helpersContainer.visible = this.showHelpers;
   }
 
   getOtherBoundingBox(other: THREE.Object3D) {
@@ -172,7 +187,9 @@ export class Main {
     const delta = now - this.startOfFrame;
 
     if (delta >= (1000 / this.fps)) {
-      this.controls?.update();
+      if (this._showHelpers) {
+        this.controls?.update();
+      }
       this._renderer.render(this.scene, this._camera);
       this.startOfFrame = now;
     }
