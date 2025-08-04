@@ -43,8 +43,11 @@ const mainInputManager = new InputManager(main.renderer.domElement, {
 });
 mainInputManager.init();
 
-main.camera.position.set(0, 0, 500);
-main.camera.lookAt(0, 0, 0);
+const yOffset = -40;
+main.camera.position.set(0, yOffset, 100);
+main.camera.lookAt(0, yOffset, 0);
+main.camera.zoom = 3.0;
+main.camera.updateProjectionMatrix();
 
 const width = 1024;
 const height = 1024;
